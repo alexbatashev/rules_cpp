@@ -24,8 +24,10 @@ filegroup(
 filegroup(
   name = "lld",
   srcs = glob([
-    "bin/lld*",
-  ])
+    "bin/lld",
+    "bin/ld.lld"
+  ]),
+  visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -33,5 +35,6 @@ filegroup(
   srcs = glob([
     "include/c++/**/*",
     "lib/*c++*",
-  ])
+  ]),
+  visibility = ["//visibility:public"],
 )

@@ -8,4 +8,9 @@ local_path_override(
 )
 
 cpp = use_extension("@rules_cpp//cpp:extension.bzl", "cpp")
+cpp.compiler(
+  name = "clang",
+  kind = "clang",
+  version = "17.0.5",
+)
 use_repo(cpp, "clang")

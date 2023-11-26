@@ -1,9 +1,15 @@
-cc_library(
-  name = "foo",
+load("@rules_cpp//cpp:rules.bzl", "cpp_toolchain")
+
+cpp_toolchain(
+  name = "clang-x64",
+  compiler = "@clang//:clang",
+  linker = "@clang//:lld",
+  stdlib = "@clang//:libcpp"
+)
+
+cc_binary(
+  name = "hello_world",
   srcs = [
-    "static_lib/lib.cpp",
+    "hello_world.cpp",
   ],
-  data = [
-    "@clang",
-  ]
 )
