@@ -1,0 +1,9 @@
+cc_library(
+  name = "foo",
+  srcs = [
+    "static_lib/lib.cpp",
+  ],
+  data = [
+    "@clang",
+  ]
+)
