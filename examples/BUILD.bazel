@@ -4,7 +4,7 @@ cpp_toolchain(
   name = "clang-x64",
   compiler = "@clang//:clang",
   linker = "@clang//:lld",
-  stdlib = "@clang//:libcpp",
+  stdlib = "@clang//:libc++",
   static_stdlib = "@clang//:static_libc++",
   binutils = "@clang//:binutils",
   target_cpus = [

@@ -63,7 +63,7 @@ cpp_toolchain(
   name = "toolchain",
   compiler = ":clang",
   linker = ":lld",
-  stdlib = ":libcpp",
+  stdlib = ":libc++",
   static_stdlib = ":static_libc++",
   binutils = ":binutils",
   target_cpus = [
