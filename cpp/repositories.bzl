@@ -3,7 +3,7 @@ load(
     "http_archive"
 )
 
-_clang_x64_linux = {
+_llvm_x64_linux = {
   "17.0.5": {
     "urls": [
       "https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.5/clang+llvm-17.0.5-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
@@ -13,27 +13,27 @@ _clang_x64_linux = {
   }
 }
 
-_clang_aarch64_darwin = {
+_llvm_aarch64_darwin = {
   "17.0.5": {
     "urls": [
       "https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.5/clang+llvm-17.0.5-arm64-apple-darwin22.0.tar.xz"
     ],
     "strip_prefix": "clang+llvm-17.0.5-arm64-apple-darwin22.0",
-    "sha256": "",
+    "sha256": "6c9aa227800d30d39c28dadbd72c15442e0d9b6813efb2aaa66a478630b7f0c6",
   }
 }
 
-def download_clang(mctx, repo_name, version):
+def download_llvm(mctx, repo_name, version):
   clang_repo = {}
   if mctx.os.name == "linux" and mctx.os.arch == "amd64":
-    clang_repo = _clang_x64_linux
-  elif mctx.os.name == "darwin" and mctx.os.arch == "aarch64":
-    clang_repo = _clang_aarch64_darwin
+    clang_repo = _llvm_x64_linux
+  elif mctx.os.name == "mac os x" and mctx.os.arch == "aarch64":
+    clang_repo = _llvm_aarch64_darwin
 
   http_archive(
     name = repo_name,
     urls = clang_repo[version]["urls"],
     strip_prefix = clang_repo[version]["strip_prefix"],
     sha256 = clang_repo[version]["sha256"],
-    build_file = "//cpp/private:clang.BUILD",
+    build_file = "//cpp/private:llvm.BUILD",
   )

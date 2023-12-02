@@ -1,20 +1,18 @@
-load("//cpp:repositories.bzl", "download_clang")
+load("//cpp:repositories.bzl", "download_llvm")
 
 def _init_toolchain(ctx):
   for mod in ctx.modules:
-    for compiler in mod.tags.compiler:
-      if compiler.kind == "clang":
-        download_clang(ctx, compiler.name, compiler.version)
+    for llvm in mod.tags.llvm:
+        download_llvm(ctx, llvm.name, llvm.version)
 
-_compiler = tag_class(
+_llvm = tag_class(
   attrs = {
     "name": attr.string(),
-    "kind": attr.string(),
     "version": attr.string(),
   }
 )
 
 cpp = module_extension(
   implementation = _init_toolchain,
-  tag_classes = {"compiler": _compiler},
+  tag_classes = {"llvm": _llvm},
 )
