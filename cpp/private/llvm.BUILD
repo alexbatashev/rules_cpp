@@ -42,7 +42,7 @@ filegroup(
 )
 
 filegroup(
-  name = "libcpp",
+  name = "libc++",
   srcs = glob([
     "include/c++/**/*",
     "lib/*c++*",

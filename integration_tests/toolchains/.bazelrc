@@ -1,1 +1,2 @@
 common --experimental_enable_bzlmod
+build --features=-static_link_cpp_runtimes
