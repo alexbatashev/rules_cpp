@@ -97,8 +97,18 @@ def _get_tool(target, tool):
         if is_llvm(target):
             return _get_tool_path(target, "bin/llvm-strip")
         return _get_tool_path(target, "bin/strip")
+    
+    if tool == "ar":
+        if is_llvm(target):
+            return _get_tool_path(target, "bin/llvm-ar")
+        return _get_tool_path(target, "bin/ar")
 
-    return "unkown_tool"
+    if tool == "dwp":
+        if is_llvm(target):
+            return _get_tool_path(target, "bin/llvm-dwp")
+        return _get_tool_path(target, "bin/dwp")
+
+    return "unkown_tool_" + tool
 
 
 def _get_include_paths(stdlib, compiler):
