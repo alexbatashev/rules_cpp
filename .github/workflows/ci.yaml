@@ -21,4 +21,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: bazelbuild/setup-bazelisk@v2
       - name: Test toolchains
-        run: cd integration_tests/toolchains && ./test_linux.sh
+        run: cd integration_tests/toolchains && ./test_macos.sh
