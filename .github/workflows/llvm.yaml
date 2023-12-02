@@ -1,0 +1,52 @@
+name: Build LLVM toolchain
+on:
+    workflow_dispatch:
+        inputs:
+            llvm_tag:
+                required: true
+
+
+jobs:
+    build_linux:
+        runs-on: ubuntu-latest
+        container:
+            image: nvidia/cuda:12.3.0-devel-ubuntu22.04
+        steps:
+            - name: Install dependencies
+              run: apt update && apt install -yqq python3 git ninja-build cmake zstd
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                repository: "llvm/llvm-project"
+                ref: ${{ inputs.llvm_tag }}
+            - name: Build and install
+              env:
+                CXXFLAGS: -w
+                CFLAGS: -w
+              run: |
+                mkdir build && cd build
+                cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
+                 -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_ENABLE_LTO=OFF -DLLVM_ENABLE_RUNTIMES=all \
+                 -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;openmp;pstl" \
+                 -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
+                 -DCMAKE_INSTALL_PREFIX=$PWD/install/${{ inputs.llvm_tag }}-linux-x86_64 \
+                 ../llvm
+
+                ninja
+
+                cd install
+                rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/llvm-exegesis
+                rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clangd
+                rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libLLVM*.a
+                rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libclang*.a
+                tar --zstd -cf ${{ inputs.llvm_tag }}-linux-x86_64.tar.zst ${{ inputs.llvm_tag }}-linux-x86_64
+            - name: Upload release
+              uses: softprops/action-gh-release@v1
+              with:
+                files: |
+                    build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
+                tag: ${{ inputs.llvm_tag }}
+                prerelease: true
+                body: A portable distribution of LLVM for use with rules_cpp
+
+
