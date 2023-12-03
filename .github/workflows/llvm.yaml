@@ -45,7 +45,7 @@ jobs:
               with:
                 files: |
                     build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
-                tag: ${{ inputs.llvm_tag }}
+                tag_name: ${{ inputs.llvm_tag }}
                 prerelease: true
                 body: A portable distribution of LLVM for use with rules_cpp
 
