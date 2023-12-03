@@ -32,7 +32,7 @@ jobs:
                  -DCMAKE_INSTALL_PREFIX=$PWD/install/${{ inputs.llvm_tag }}-linux-x86_64 \
                  ../llvm
 
-                ninja
+                ninja install
 
                 cd install
                 rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/llvm-exegesis
