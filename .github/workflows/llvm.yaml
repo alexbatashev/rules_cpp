@@ -40,13 +40,10 @@ jobs:
                 rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libLLVM*.a
                 rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libclang*.a
                 tar --zstd -cf ${{ inputs.llvm_tag }}-linux-x86_64.tar.zst ${{ inputs.llvm_tag }}-linux-x86_64
-            - name: Upload release
-              uses: softprops/action-gh-release@v1
+            - name: Upload artifact
+              uses: actions/checkout@v3
               with:
-                files: |
-                    build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
-                tag_name: ${{ inputs.llvm_tag }}
-                prerelease: true
-                body: A portable distribution of LLVM for use with rules_cpp
+                path: build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
+                name: linux_x86_64_toolchain
 
 
