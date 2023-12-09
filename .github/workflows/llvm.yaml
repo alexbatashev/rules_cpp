@@ -7,43 +7,78 @@ on:
 
 
 jobs:
-    build_linux:
-        runs-on: ubuntu-latest
-        container:
-            image: nvidia/cuda:12.3.0-devel-ubuntu22.04
-        steps:
-            - name: Install dependencies
-              run: apt update && apt install -yqq python3 git ninja-build cmake zstd
-            - name: Checkout code
-              uses: actions/checkout@v4
-              with:
-                repository: "llvm/llvm-project"
-                ref: ${{ inputs.llvm_tag }}
-            - name: Build and install
-              env:
-                CXXFLAGS: -w
-                CFLAGS: -w
-              run: |
-                mkdir build && cd build
-                cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
-                 -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_ENABLE_LTO=OFF -DLLVM_ENABLE_RUNTIMES=all \
-                 -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;openmp;pstl" \
-                 -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
-                 -DCMAKE_INSTALL_PREFIX=$PWD/install/${{ inputs.llvm_tag }}-linux-x86_64 \
-                 ../llvm
+  build_linux_x64:
+    runs-on: ubuntu-latest
+    container:
+      image: nvidia/cuda:12.3.0-devel-ubuntu22.04
+    steps:
+      - name: Install dependencies
+        run: apt update && apt install -yqq python3 git ninja-build cmake zstd
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: "llvm/llvm-project"
+          ref: ${{ inputs.llvm_tag }}
+      - name: Build and install
+        env:
+          CXXFLAGS: -w
+          CFLAGS: -w
+        run: |
+          mkdir build && cd build
+          cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
+            -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_ENABLE_LTO=OFF -DLLVM_ENABLE_RUNTIMES=all \
+            -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;openmp;pstl" \
+            -DLLVM_STATIC_LINK_CXX_STDLIB=ON -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
+            -DCMAKE_INSTALL_PREFIX=$PWD/install/${{ inputs.llvm_tag }}-linux-x86_64 \
+            ../llvm
 
-                ninja install
+          ninja install
 
-                cd install
-                rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/llvm-exegesis
-                rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clangd
-                rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libLLVM*.a
-                rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libclang*.a
-                tar --zstd -cf ${{ inputs.llvm_tag }}-linux-x86_64.tar.zst ${{ inputs.llvm_tag }}-linux-x86_64
-            - name: Upload artifact
-              uses: actions/upload-artifact@v3
-              with:
-                path: build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
-                name: linux_x86_64_toolchain
+          cd install
+          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clangd
+          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-query
+          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-refactor
+          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-rename
+          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-change-namespace
+          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-check
+          rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libLLVM*.a
+          rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libclang*.a
+
+          for file in ${{ inputs.llvm_tag }}-linux-x86_64/bin/*; do
+              if [ -f "$file" ]; then
+              echo "Strip $file"
+              strip $file
+              fi
+          done
+
+          for file in ${{ inputs.llvm_tag }}-linux-x86_64/lib/*; do
+              if [ -f "$file" ]; then
+              echo "Strip $file"
+              strip $file
+              fi
+          done
+
+          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-x86_64.tar.zst ${{ inputs.llvm_tag }}-linux-x86_64
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
+          name: linux_x86_64_toolchain
+
+  publish_release:
+      needs: ["build_linux_x64"]
+      runs-on: ubuntu
+      steps:
+        - name: Download artifacts
+          uses: actions/download-artifact@v3
+        - name: Create release
+          uses: softprops/action-gh-release@v1
+          with:
+            token: ${{ secrets.RELEASE_TOKEN }}
+            tag_name: ${{ inputs.llvm_tag }}-${{ github.sha }}
+            name: LLVM Toolchain ${{ inputs.llvm_tag }}
+            prerelease: true
+            files: |
+              ${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
 
 
