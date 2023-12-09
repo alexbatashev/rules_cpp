@@ -45,14 +45,14 @@ jobs:
           for file in ${{ inputs.llvm_tag }}-linux-x86_64/bin/*; do
               if [ -f "$file" ]; then
               echo "Strip $file"
-              strip $file
+              strip $file || echo "Failed to strip"
               fi
           done
 
           for file in ${{ inputs.llvm_tag }}-linux-x86_64/lib/*; do
               if [ -f "$file" ]; then
               echo "Strip $file"
-              strip $file
+              strip $file || echo "Failed to strip"
               fi
           done
 
