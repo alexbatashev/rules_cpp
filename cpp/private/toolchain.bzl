@@ -119,6 +119,7 @@ def _get_include_paths(stdlib, compiler):
         include_dirs += [
             stdlib_base + "include/c++/v1",
             stdlib_base + "include/x86_64-unknown-linux-gnu",
+            stdlib_base + "include/x86_64-unknown-linux-gnu/c++/v1",
         ]
 
     if is_clang(compiler):
@@ -128,6 +129,11 @@ def _get_include_paths(stdlib, compiler):
 
     return include_dirs
 
+
+def _get_linker_flag(linker):
+    if is_lld(linker):
+        return ["-fuse-ld=lld"]
+    return []
 
 def _get_link_paths(stdlib, compiler):
     stdlib_base = stdlib.label.workspace_root + "/"
@@ -290,6 +296,12 @@ def toolchain_impl(ctx):
             flag_set(
                 actions = all_link_actions,
                 flag_groups = [
+                    flag_group(
+                        flags = _get_linker_flag(linker),
+                    ),
+                    flag_group(
+                        flags = ["-Wl,-nostdlib"],
+                    ),
                     flag_group(
                         flags = ["-L" + d for d in link_dirs]
                     ),

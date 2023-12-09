@@ -45,6 +45,7 @@ filegroup(
   name = "libc++",
   srcs = glob([
     "include/c++/**/*",
+    "include/x86_64-unknown-linux-gnu/**/*",
     "lib/*c++*",
   ]),
   visibility = ["//visibility:public"],
@@ -52,10 +53,10 @@ filegroup(
 
 filegroup(
   name = "static_libc++",
-  srcs = [
-    "lib/libc++.a",
-    "lib/libc++abi.a"
-  ],
+  srcs = glob([
+    "lib/**/libc++.a",
+    "lib/**/libc++abi.a",
+  ]),
   visibility = ["//visibility:public"],
 )
 
