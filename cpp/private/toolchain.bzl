@@ -580,7 +580,7 @@ def toolchain_impl(ctx):
         provides = ["extra_warnings"],
         flag_sets = [flag_set(
             actions = all_compile_actions,
-            flag_groups = [flag_group(flags = "-Weverythin")],
+            flag_groups = [flag_group(flags = "-Weverything")],
         )]
     )
 
