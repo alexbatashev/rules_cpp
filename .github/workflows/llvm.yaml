@@ -41,8 +41,6 @@ jobs:
           rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-rename
           rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-change-namespace
           rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-check
-          rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libLLVM*.a
-          rm ${{ inputs.llvm_tag }}-linux-x86_64/lib/libclang*.a
 
           for file in ${{ inputs.llvm_tag }}-linux-x86_64/bin/*; do
               if [ -f "$file" ]; then
