@@ -554,6 +554,7 @@ def toolchain_impl(ctx):
         name = "extra_warnings",
         flag_sets = [flag_set(
             actions = all_compile_actions,
+            # Do not forget to update docs!
             flag_groups = [flag_group(flags = [
                 "-Wall",
                 "-Wextra",
@@ -570,6 +571,16 @@ def toolchain_impl(ctx):
                 "-Wdouble-promotion",
                 "-Wformat=2",
             ])]
+        )]
+    )
+
+    # FIXME(alexbatashev): only valid for Clang, alias to extra_warnings otherwise.
+    weverything_flags = feature(
+        name = "weverything",
+        provides = ["extra_warnings"],
+        flag_sets = [flag_set(
+            actions = all_compile_actions,
+            flag_groups = [flag_group(flags = "-Weverythin")],
         )]
     )
 
@@ -657,18 +668,40 @@ def toolchain_impl(ctx):
 
     static_stdlib_flags = []
     if is_clang(compiler):
-        static_stdlib_flags = ["-nostdlib", "-lc", "-Wno-unused-command-line-argument"]
+        static_stdlib_flags = [
+            "-nostdlib",
+            "-lc",
+            "-Wno-unused-command-line-argument",
+            "-static-libstdc++",
+            "-l:libc++abi.a",
+            "-l:libc++.a",
+            "-l:libunwind.a",
+            "-static-libgcc",
+        ]
 
     static_stdlib_feature = feature(
-        name = "static_link_cpp_runtimes",
+        name = "static_stdlib",
+        enabled = True,
         flag_sets = [
             flag_set(
                 actions = all_cpp_compile_actions + all_link_actions,
                 flag_groups = [
-                    flag_group(
-                        flags = static_stdlib_flags
-                    )
-                ]
+                    flag_group(flags = static_stdlib_flags)
+                ],
+            )
+        ]
+    )
+    
+    # FIXME(alexbatashev): figure out how to use the default feature so that we don't need a custom one
+    static_link_cpp_runtimes_feature = feature(
+        name = "static_link_cpp_runtimes",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = all_cpp_compile_actions + all_link_actions,
+                flag_groups = [
+                    flag_group(flags = static_stdlib_flags)
+                ],
             )
         ]
     )
@@ -682,6 +715,18 @@ def toolchain_impl(ctx):
                     flag_group(
                         flags = ["-std=c++20"]
                     )
+                ]
+            )
+        ]
+    )
+    
+    openmp_feature = feature(
+        name = "openmp",
+        flag_sets = [
+            flag_set(
+                actions = all_compile_actions + all_link_actions,
+                flag_groups = [
+                    flag_group(flags = ["-fopenmp"]),
                 ]
             )
         ]
@@ -807,7 +852,9 @@ def toolchain_impl(ctx):
         extra_warnings_flags,
         werror_flags,
         static_stdlib_feature,
+        static_link_cpp_runtimes_feature,
         cpp20_feature,
+        openmp_feature,
         layering_check,
         module_maps,
         use_module_maps,

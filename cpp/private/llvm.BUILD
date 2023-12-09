@@ -56,6 +56,7 @@ filegroup(
   srcs = glob([
     "lib/**/libc++.a",
     "lib/**/libc++abi.a",
+    "lib/**/libunwind.a",
   ]),
   visibility = ["//visibility:public"],
 )
