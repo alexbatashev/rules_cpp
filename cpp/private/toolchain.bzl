@@ -669,7 +669,6 @@ def toolchain_impl(ctx):
     static_stdlib_flags = []
     if is_clang(compiler):
         static_stdlib_flags = [
-            "-nostdlib",
             "-lc",
             "-Wno-unused-command-line-argument",
             "-static-libstdc++",
@@ -681,13 +680,10 @@ def toolchain_impl(ctx):
 
     static_stdlib_feature = feature(
         name = "static_stdlib",
-        enabled = True,
         flag_sets = [
             flag_set(
-                actions = all_cpp_compile_actions + all_link_actions,
-                flag_groups = [
-                    flag_group(flags = static_stdlib_flags)
-                ],
+                actions = all_link_actions,
+                flag_groups = [flag_group(flags = static_stdlib_flags)],
             )
         ]
     )
@@ -695,13 +691,10 @@ def toolchain_impl(ctx):
     # FIXME(alexbatashev): figure out how to use the default feature so that we don't need a custom one
     static_link_cpp_runtimes_feature = feature(
         name = "static_link_cpp_runtimes",
-        enabled = True,
         flag_sets = [
             flag_set(
-                actions = all_cpp_compile_actions + all_link_actions,
-                flag_groups = [
-                    flag_group(flags = static_stdlib_flags)
-                ],
+                actions = all_link_actions,
+                flag_groups = [flag_group(flags = static_stdlib_flags)],
             )
         ]
     )
