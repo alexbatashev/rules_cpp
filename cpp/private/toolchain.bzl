@@ -583,6 +583,27 @@ def toolchain_impl(ctx):
         ],
     )
 
+    pic_feature = feature(
+        name = "pic",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = [
+                    ACTION_NAMES.assemble,
+                    ACTION_NAMES.preprocess_assemble,
+                    ACTION_NAMES.linkstamp_compile,
+                    ACTION_NAMES.c_compile,
+                    ACTION_NAMES.cpp_compile,
+                    ACTION_NAMES.cpp_module_codegen,
+                    ACTION_NAMES.cpp_module_compile,
+                ],
+                flag_groups = [
+                    flag_group(flags = ["-fPIC"], expand_if_available = "pic"),
+                ],
+            ),
+        ],
+    )
+
     extra_warnings_flags = feature(
         name = "extra_warnings",
         flag_sets = [flag_set(
@@ -894,6 +915,7 @@ def toolchain_impl(ctx):
         default_optimization_flags,
         minimal_debug_info_flags,
         default_debug_info_flags,
+        pic_feature,
         triple_feature,
         preserve_call_stacks,
         sysroot_feature,
