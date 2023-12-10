@@ -738,7 +738,7 @@ def toolchain_impl(ctx):
         name = "c++20",
         flag_sets = [
             flag_set(
-                actions = all_compile_actions,
+                actions = all_cpp_compile_actions,
                 flag_groups = [
                     flag_group(
                         flags = ["-std=c++20"],
