@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install dependencies
-        run: apt update && apt install -yqq python3 git ninja-build cmake zstd
+        run: sudo apt update && sudo apt install -yqq python3 git ninja-build cmake zstd
       - name: Install ARM toolchain
-        run: apt install -yqq gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
+        run: sudo apt install -yqq gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
       - name: Install AArch64 toolchain
-        run: apt install -yqq gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+        run: sudo apt install -yqq gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
       - name: Install RISC-V toolchain
-        run: apt install -yqq gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu
+        run: sudo apt install -yqq gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu
       - name: Checkout code
         uses: actions/checkout@v4
         with:
