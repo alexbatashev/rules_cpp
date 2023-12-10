@@ -1,10 +1,17 @@
-load("@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl", "action_config", "tool_path", "flag_group", "flag_set", "feature", "tool",
-"variable_with_value",
-    "with_feature_set",
+load(
+    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    "action_config",
+    "feature",
     "feature_set",
+    "flag_group",
+    "flag_set",
+    "tool",
+    "tool_path",
+    "variable_with_value",
+    "with_feature_set",
 )
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
-load("//cpp/private:utils.bzl", "is_clang", "is_lld", "is_llvm", "is_libcpp")
+load("//cpp/private:utils.bzl", "is_clang", "is_libcpp", "is_lld", "is_llvm")
 
 all_c_compile_actions = [
     ACTION_NAMES.c_compile,
@@ -97,7 +104,7 @@ def _get_tool(target, tool):
         if is_llvm(target):
             return _get_tool_path(target, "bin/llvm-strip")
         return _get_tool_path(target, "bin/strip")
-    
+
     if tool == "ar":
         if is_llvm(target):
             return _get_tool_path(target, "bin/llvm-ar")
@@ -109,7 +116,6 @@ def _get_tool(target, tool):
         return _get_tool_path(target, "bin/dwp")
 
     return "unkown_tool_" + tool
-
 
 def _get_include_paths(stdlib, compiler):
     include_dirs = []
@@ -129,7 +135,6 @@ def _get_include_paths(stdlib, compiler):
 
     return include_dirs
 
-
 def _get_linker_flag(linker):
     if is_lld(linker):
         return ["-fuse-ld=lld"]
@@ -146,7 +151,6 @@ def _get_link_paths(stdlib, compiler):
 
     return link_dirs
 
-
 def _get_exec_rpath_prefix(ctx):
     if ctx.attr.target_cpu in ["aarch64", "k8"]:
         return "$EXECROOT/"
@@ -161,6 +165,17 @@ def _get_rpath_prefix(ctx):
         return "@loader_path/"
     return None
 
+def _get_target_triple(target_cpu):
+    if target_cpu == "k8":
+        return "x86_64-linux-gnu"
+    elif target_cpu == "darwin":
+        return "x86_64-apple-darwin"
+    elif target_cpu == "aarch64":
+        return "aarch64-linux-gnu"
+    elif target_cpu == "darwin_arm64":
+        return "aarch64-apple-darwin"
+
+    return "unknown-unknown-unknown"
 
 def toolchain_impl(ctx):
     compiler = ctx.attr.compiler
@@ -229,7 +244,8 @@ def toolchain_impl(ctx):
                             "-no-canonical-prefixes",
                             # TODO enable this option for GCC
                             # "-fno-canonical-system-headers",
-                            "-isystem", "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include",
+                            "-isystem",
+                            "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include",
                             # Compile actions shouldn't link anything.
                             "-c",
                         ],
@@ -303,7 +319,7 @@ def toolchain_impl(ctx):
                         flags = ["-Wl,-nostdlib"],
                     ),
                     flag_group(
-                        flags = ["-L" + d for d in link_dirs]
+                        flags = ["-L" + d for d in link_dirs],
                     ),
                     flag_group(
                         flags = ["-Wl,-rpath," + _get_exec_rpath_prefix(ctx) + d for d in link_dirs],
@@ -324,14 +340,14 @@ def toolchain_impl(ctx):
                     flag_group(
                         iterate_over = "runtime_library_search_directories",
                         flags = [
-                            "-Wl,-rpath,"+_get_rpath_prefix(ctx)+"%{runtime_library_search_directories}",
+                            "-Wl,-rpath," + _get_rpath_prefix(ctx) + "%{runtime_library_search_directories}",
                         ],
                         expand_if_available =
                             "runtime_library_search_directories",
                     ),
                 ],
             ),
-        ]
+        ],
     )
 
     default_link_libraries_feature = feature(
@@ -437,6 +453,7 @@ def toolchain_impl(ctx):
     module_maps = feature(
         name = "module_maps",
         implies = [],
+        requires = [feature_set(features = ["clang"])],
         flag_sets = [
             flag_set(
                 actions = [
@@ -446,10 +463,10 @@ def toolchain_impl(ctx):
                     ACTION_NAMES.cpp_module_compile,
                 ],
                 flag_groups = [
-                    flag_group(flags = module_maps_flags)
-                ]
-            )
-        ]
+                    flag_group(flags = module_maps_flags),
+                ],
+            ),
+        ],
     )
 
     layering_check = feature(
@@ -479,30 +496,46 @@ def toolchain_impl(ctx):
         ],
     )
 
+    triple_feature = feature(
+        name = "default_triple",
+        enabled = is_clang(compiler),
+        flag_sets = [
+            flag_set(
+                actions = all_compile_actions + all_link_actions,
+                flag_groups = [flag_group(flags = [
+                    "--target=" + _get_target_triple(ctx.attr.target_cpu),
+                ])],
+            ),
+        ],
+    )
+
     darwin_default_feature = feature(
         name = "darwin_default_libraries",
         enabled = True,
         flag_sets = [
             flag_set(
                 actions = all_compile_actions,
-                flag_groups = ([
-                    flag_group(
-                        flags = [
-                            "-isystem", "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include",
-                        ],
-                    )
-                ]
-            )
+                flag_groups = (
+                    [
+                        flag_group(
+                            flags = [
+                                "-isystem",
+                                "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include",
+                            ],
+                        ),
+                    ]
+                ),
             ),
             flag_set(
                 actions = all_link_actions,
                 flag_groups = [
                     flag_group(
                         flags = [
-                            "-L", "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/lib",
-                        ]
+                            "-L",
+                            "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/lib",
+                        ],
                     ),
-                ]
+                ],
             ),
             flag_set(
                 actions = [
@@ -515,7 +548,7 @@ def toolchain_impl(ctx):
                     ),
                 ],
             ),
-        ]
+        ],
     )
 
     minimal_optimization_flags = feature(
@@ -570,28 +603,30 @@ def toolchain_impl(ctx):
                 "-Wmisleading-indentation",
                 "-Wdouble-promotion",
                 "-Wformat=2",
-            ])]
-        )]
+            ])],
+        )],
     )
 
-    # FIXME(alexbatashev): only valid for Clang, alias to extra_warnings otherwise.
     weverything_flags = feature(
         name = "weverything",
         provides = ["extra_warnings"],
+        requires = [feature_set(features = ["clang"])],
         flag_sets = [flag_set(
             actions = all_compile_actions,
             flag_groups = [flag_group(flags = ["-Weverything"])],
-        )]
+        )],
     )
 
     werror_flags = feature(
         name = "werror",
-        flag_sets = [flag_set(
-            actions = all_compile_actions,
-            flag_groups = [flag_group(flags = [
-                "-Werror"
-            ])])
-        ]
+        flag_sets = [
+            flag_set(
+                actions = all_compile_actions,
+                flag_groups = [flag_group(flags = [
+                    "-Werror",
+                ])],
+            ),
+        ],
     )
 
     minimal_debug_info_flags = feature(
@@ -684,10 +719,10 @@ def toolchain_impl(ctx):
             flag_set(
                 actions = all_link_actions,
                 flag_groups = [flag_group(flags = static_stdlib_flags)],
-            )
-        ]
+            ),
+        ],
     )
-    
+
     # FIXME(alexbatashev): figure out how to use the default feature so that we don't need a custom one
     static_link_cpp_runtimes_feature = feature(
         name = "static_link_cpp_runtimes",
@@ -695,10 +730,10 @@ def toolchain_impl(ctx):
             flag_set(
                 actions = all_link_actions,
                 flag_groups = [flag_group(flags = static_stdlib_flags)],
-            )
-        ]
+            ),
+        ],
     )
-    
+
     cpp20_feature = feature(
         name = "c++20",
         flag_sets = [
@@ -706,13 +741,13 @@ def toolchain_impl(ctx):
                 actions = all_compile_actions,
                 flag_groups = [
                     flag_group(
-                        flags = ["-std=c++20"]
-                    )
-                ]
-            )
-        ]
+                        flags = ["-std=c++20"],
+                    ),
+                ],
+            ),
+        ],
     )
-    
+
     openmp_feature = feature(
         name = "openmp",
         flag_sets = [
@@ -720,9 +755,27 @@ def toolchain_impl(ctx):
                 actions = all_compile_actions + all_link_actions,
                 flag_groups = [
                     flag_group(flags = ["-fopenmp"]),
-                ]
-            )
-        ]
+                ],
+            ),
+        ],
+    )
+
+    mavx_flag = feature(
+        name = "avx",
+        enabled = ctx.attr.target_cpu == "k8" or ctx.attr.target_cpu == "darwin",
+        flag_sets = [flag_set(
+            actions = all_compile_actions,
+            flag_groups = [flag_group(flags = ["-mavx"])],
+        )],
+    )
+
+    mavx2_flag = feature(
+        name = "avx2",
+        enabled = ctx.attr.target_cpu == "k8" or ctx.attr.target_cpu == "darwin",
+        flag_sets = [flag_set(
+            actions = all_compile_actions,
+            flag_groups = [flag_group(flags = ["-mavx2"])],
+        )],
     )
 
     sysroot_feature = feature(
@@ -823,6 +876,7 @@ def toolchain_impl(ctx):
     )
 
     features = [
+        feature(name = "clang", enabled = is_clang(compiler)),
         feature(name = "dbg"),
         feature(name = "fastbuild"),
         feature(name = "host"),
@@ -840,6 +894,7 @@ def toolchain_impl(ctx):
         default_optimization_flags,
         minimal_debug_info_flags,
         default_debug_info_flags,
+        triple_feature,
         preserve_call_stacks,
         sysroot_feature,
         extra_warnings_flags,
@@ -848,6 +903,8 @@ def toolchain_impl(ctx):
         static_link_cpp_runtimes_feature,
         cpp20_feature,
         openmp_feature,
+        mavx_flag,
+        mavx2_flag,
         layering_check,
         module_maps,
         use_module_maps,
@@ -874,12 +931,9 @@ def toolchain_impl(ctx):
         action_configs = action_configs,
         cxx_builtin_include_directories = include_dirs,
         builtin_sysroot = sysroot,
-
-        # This configuration only supports local non-cross builds so derive
-        # everything from the target CPU selected.
-        toolchain_identifier = "local-" + ctx.attr.target_cpu,
-        host_system_name = "local-" + ctx.attr.target_cpu,
-        target_system_name = "local-" + ctx.attr.target_cpu,
+        toolchain_identifier = ctx.attr.toolchain_prefix + "-" + ctx.attr.target_cpu,
+        host_system_name = ctx.attr.toolchain_prefix + "-" + ctx.attr.host_cpu,
+        target_system_name = ctx.attr.toolchain_prefix + "-" + ctx.attr.target_cpu,
         target_cpu = ctx.attr.target_cpu,
 
         # These attributes aren't meaningful at all so just use placeholder
@@ -888,8 +942,5 @@ def toolchain_impl(ctx):
         compiler = "local",
         abi_version = "local",
         abi_libc_version = "local",
-
-        # We do have to pass in our tool paths.
         tool_paths = tool_paths,
     )
-

@@ -1,15 +1,17 @@
-module(name = "toolchain_tests", version = "0.0.1")
+module(
+    name = "toolchain_tests",
+    version = "0.0.1",
+)
 
 bazel_dep(name = "rules_cpp", version = "0.0.0")
-
 local_path_override(
-  module_name = "rules_cpp",
-  path = "./../../"
+    module_name = "rules_cpp",
+    path = "./../../",
 )
 
 cpp = use_extension("@rules_cpp//cpp:extension.bzl", "cpp")
 cpp.llvm(
-  name = "llvm-17",
-  version = "17.0.5",
+    name = "llvm-17",
+    version = "17.0.6",
 )
 use_repo(cpp, "llvm-17")

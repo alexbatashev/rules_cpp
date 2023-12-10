@@ -37,3 +37,8 @@ by these toolchains.
 ## Parallel computation
 
 - `openmp` - enable OpenMP support.
+
+## Target features
+
+- `avx` - enable AVX instruction set support, enabled by default on `x86_64` targets.
+- `avx2` - enable AVX2 instruction set support, enabled by default on `x86_64` targets.

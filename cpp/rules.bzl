@@ -1,11 +1,13 @@
 load("//cpp/private:toolchain.bzl", "toolchain_impl")
 
 _toolchain_attrs = {
+    "toolchain_prefix": attr.string(mandatory = True),
     "binutils": attr.label(),
     "compiler": attr.label(),
     "linker": attr.label(),
     "stdlib": attr.label(),
     "target_cpu": attr.string(mandatory = True),
+    "host_cpu": attr.string(mandatory = True),
 }
 
 cpp_toolchain_config = rule(
@@ -23,7 +25,7 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
             stdlib,
             static_stdlib,
             binutils,
-        ]
+        ],
     )
 
     toolchains = {}
@@ -31,11 +33,13 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
     for cpu in target_cpus:
         cpp_toolchain_config(
             name = name + "-" + cpu + "-config",
+            toolchain_prefix = name,
             compiler = compiler,
             linker = linker,
             stdlib = stdlib,
             binutils = binutils,
             target_cpu = cpu,
+            host_cpu = cpu,
         )
 
         native.cc_toolchain(
