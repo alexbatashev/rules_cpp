@@ -28,15 +28,17 @@ jobs:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
-          mkdir build && cd build
           export RT_TARGETS="x86_64-unknown-linux-gnu;aarch64-unknown-linux-gnu;riscv64-unknown-linux-gnu"
           export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
           export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld"
+
           # FIXME: enable bolt once more powerful runners are available
-          # -DCLANG_BOLT_INSTRUMENT=ON -DCMAKE_EXE_LINKER_FLAGS="-Wl,--emit-relocs,-znow" \
+          # -DCLANG_BOLT_INSTRUMENT=ON -DCMAKE_EXE_LINKER_FLAGS="-Wl,--emit-relocs,-znow"
+
+          mkdir build && cd build
           cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
-            -DLLVM_ENABLE_LLD=ON \
-            -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64;NVPTX;AMDGPU;RISCV" \
+            -DLLVM_ENABLE_LLD=OFF \
+            -DLLVM_TARGETS_TO_BUILD="X86;AArch64;NVPTX;AMDGPU;RISCV" \
             -DLLVM_RUNTIME_TARGETS="$RT_TARGETS" \
             -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON \
             -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF \
@@ -49,7 +51,7 @@ jobs:
             -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
             -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/x86_64-unknown-linux-gnu" -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
             -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/aarch64-unknown-linux-gnu" -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
-            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/riscv64-unknown-linux-gnu" -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \ 
+            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/riscv64-unknown-linux-gnu" -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
             -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
             -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
             -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_ENABLE_LIBOMPTARGET=OFF \
