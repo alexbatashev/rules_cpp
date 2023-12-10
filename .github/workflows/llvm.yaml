@@ -33,7 +33,8 @@ jobs:
           export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-dpw;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
           export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;builtins;runtimes;lld;pstl"
           cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
-            -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64;RISC-V;NVPTX;AMDGPU" \
+            -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64;NVPTX;AMDGPU" \
+            -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="RISC-V" \
             -DLLVM_BUILTIN_TARGETS="$RT_TARGETS" \
             -DLLVM_RUNTIME_TARGETS="$RT_TARGETS" \
             -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_ENABLE_LTO=OFF -DLLVM_ENABLE_RUNTIMES=all \
