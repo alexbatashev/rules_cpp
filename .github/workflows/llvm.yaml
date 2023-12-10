@@ -44,7 +44,7 @@ jobs:
             -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF \
             -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_ENABLE_LTO=OFF \
             -DLLVM_ENABLE_RUNTIMES="libunwind;compiler-rt;libcxx;libcxxabi;openmp" \
-            -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;openmp;pstl" \
+            -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;pstl" \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
             -DCMAKE_INSTALL_PREFIX=$PWD/install/${{ inputs.llvm_tag }}-linux-x86_64 \
             -DLIBCXX_HERMETIC_STATIC_LIBRARY=ON \
