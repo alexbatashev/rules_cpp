@@ -30,8 +30,8 @@ jobs:
         run: |
           mkdir build && cd build
           export RT_TARGETS="x86_64-unknown-linux-gnu;arm-unknown-linux-gnueabi;aarch64-unknown-linux-gnu;riscv64-unknown-linux-gnu"
-          export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-dpw;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
-          export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;builtins;runtimes;lld;pstl"
+          export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
+          export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld"
           cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64;NVPTX;AMDGPU;RISCV" \
             -DLLVM_BUILTIN_TARGETS="$RT_TARGETS" \
@@ -48,16 +48,9 @@ jobs:
             ../llvm
 
           ninja clang-bolt
-          ninja install
+          ninja install-distribution-stripped
 
           cd install
-
-          for file in ${{ inputs.llvm_tag }}-linux-x86_64/bin/*; do
-              if [ -f "$file" ]; then
-              echo "Strip $file"
-              strip $file || echo "Failed to strip"
-              fi
-          done
 
           tar --zstd -cf ${{ inputs.llvm_tag }}-linux-x86_64.tar.zst ${{ inputs.llvm_tag }}-linux-x86_64
       - name: Upload artifact
