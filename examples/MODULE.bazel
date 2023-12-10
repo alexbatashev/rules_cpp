@@ -1,0 +1,17 @@
+module(
+    name = "cpp_examples",
+    version = "0.0.1",
+)
+
+bazel_dep(name = "rules_cpp", version = "0.0.0")
+local_path_override(
+    module_name = "rules_cpp",
+    path = "./../",
+)
+
+cpp = use_extension("@rules_cpp//cpp:extension.bzl", "cpp")
+cpp.llvm(
+    name = "clang",
+    version = "17.0.5",
+)
+use_repo(cpp, "clang")

@@ -1,0 +1,22 @@
+load("@rules_cpp//cpp:rules.bzl", "cpp_toolchain")
+
+cpp_toolchain(
+    name = "clang-x64",
+    binutils = "@clang//:binutils",
+    compiler = "@clang",
+    linker = "@clang//:lld",
+    static_stdlib = "@clang//:static_libc++",
+    stdlib = "@clang//:libc++",
+    target_cpus = [
+        "k8",
+        "aarch64",
+        "darwin_arm64",
+    ],
+)
+
+cc_binary(
+    name = "hello_world",
+    srcs = [
+        "hello_world.cpp",
+    ],
+)

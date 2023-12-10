@@ -1,0 +1,17 @@
+cc_library(
+    name = "foo",
+    srcs = [
+        "src/foo.cpp",
+        "src/foo.h",
+    ],
+    hdrs = [
+        "src/foo.h",
+    ],
+    strip_include_prefix = "src",
+)
+
+cc_binary(
+    name = "test",
+    srcs = ["src/main.cpp"],
+    deps = [":foo"],
+)
