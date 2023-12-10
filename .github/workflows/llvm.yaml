@@ -33,10 +33,11 @@ jobs:
           export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-dpw;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
           export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;builtins;runtimes;lld;pstl"
           cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
-            -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64;NVPTX;AMDGPU" \
-            -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="RISC-V" \
+            -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64;NVPTX;AMDGPU;RISCV" \
             -DLLVM_BUILTIN_TARGETS="$RT_TARGETS" \
             -DLLVM_RUNTIME_TARGETS="$RT_TARGETS" \
+            -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON \
+            -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF \
             -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_ENABLE_LTO=OFF -DLLVM_ENABLE_RUNTIMES=all \
             -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;openmp;pstl" \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
