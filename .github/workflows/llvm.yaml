@@ -49,7 +49,7 @@ jobs:
             -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
             -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/x86_64-unknown-linux-gnu" -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
             -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/aarch64-unknown-linux-gnu" -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
-            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/riscv64-unknown-linux-gnu" -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON 
+            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/riscv64-unknown-linux-gnu" -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \ 
             -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
             -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
             -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_ENABLE_LIBOMPTARGET=OFF \
