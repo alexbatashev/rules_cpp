@@ -9,11 +9,15 @@ on:
 jobs:
   build_linux_x64:
     runs-on: ubuntu-latest
-    container:
-      image: nvidia/cuda:12.3.0-devel-ubuntu22.04
     steps:
       - name: Install dependencies
-        run: apt update && apt install -yqq python3 git ninja-build cmake zstd
+        run: sudo apt update && sudo apt install -yqq python3 git ninja-build cmake zstd
+      - name: Install ARM toolchain
+        run: sudo apt install -yqq gcc-arm-linux-gnueabi g++-arm-linux-gnueabi binutils-arm-linux-gnueabi
+      - name: Install AArch64 toolchain
+        run: sudo apt install -yqq gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
+      - name: Install RISC-V toolchain
+        run: sudo apt install -yqq gcc-riscv64-linux-gnu g++-riscv64-linux-gnu binutils-riscv64-linux-gnu
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -24,44 +28,55 @@ jobs:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
+          export RT_TARGETS="x86_64-unknown-linux-gnu;aarch64-unknown-linux-gnu;riscv64-unknown-linux-gnu"
+          export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
+          export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld"
+
+          # FIXME: enable bolt once more powerful runners are available
+          # -DCLANG_BOLT_INSTRUMENT=ON -DCMAKE_EXE_LINKER_FLAGS="-Wl,--emit-relocs,-znow"
+
           mkdir build && cd build
           cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
-            -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_ENABLE_LTO=OFF -DLLVM_ENABLE_RUNTIMES=all \
-            -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;openmp;pstl" \
+            -DLLVM_ENABLE_LLD=OFF \
+            -DLLVM_TARGETS_TO_BUILD="X86;AArch64;NVPTX;AMDGPU;RISCV" \
+            -DLLVM_RUNTIME_TARGETS="$RT_TARGETS" \
+            -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON \
+            -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF \
+            -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_ENABLE_LTO=OFF \
+            -DLLVM_ENABLE_RUNTIMES="libunwind;compiler-rt;libcxx;libcxxabi;openmp" \
+            -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;pstl" \
             -DLLVM_STATIC_LINK_CXX_STDLIB=ON -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
             -DCMAKE_INSTALL_PREFIX=$PWD/install/${{ inputs.llvm_tag }}-linux-x86_64 \
+            -DLIBCXX_HERMETIC_STATIC_LIBRARY=ON \
+            -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+            -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/x86_64-unknown-linux-gnu" -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
+            -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/aarch64-unknown-linux-gnu" -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
+            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/riscv64-unknown-linux-gnu" -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
+            -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
+            -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
+            -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_ENABLE_LIBOMPTARGET=OFF \
+            -DRUNTIMES_aarch64-unknown-linux-gnu_LIBOMP_OMPD_GDB_SUPPORT=OFF \
+            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
+            -DRUNTIMES_riscv64-unknown-linux-gnu_LIBOMP_OMPD_GDB_SUPPORT=OFF \
+            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_ENABLE_LIBOMPTARGET=OFF \
+            -DLLVM_TOOLCHAIN_TOOLS="$TOOLS" -DLLVM_DISTRIBUTION_COMPONENTS="$COMPONENTS;$TOOLS" \
             ../llvm
 
-          ninja install
+          # FIXME: this requires too much RAM
+          # ninja clang-bolt
+          ninja install-distribution-stripped
+          ninja llvm-dwp
+          ninja install-pstl
+          cp ./bin/llvm-dwp ./install/${{inputs.llvm_tag}}-linux-x86_64/bin
 
           cd install
-          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clangd
-          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-query
-          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-refactor
-          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-rename
-          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-change-namespace
-          rm ${{ inputs.llvm_tag }}-linux-x86_64/bin/clang-check
-
-          for file in ${{ inputs.llvm_tag }}-linux-x86_64/bin/*; do
-              if [ -f "$file" ]; then
-              echo "Strip $file"
-              strip $file || echo "Failed to strip"
-              fi
-          done
-
-          for file in ${{ inputs.llvm_tag }}-linux-x86_64/lib/*; do
-              if [ -f "$file" ]; then
-              echo "Strip $file"
-              strip $file || echo "Failed to strip"
-              fi
-          done
 
           tar --zstd -cf ${{ inputs.llvm_tag }}-linux-x86_64.tar.zst ${{ inputs.llvm_tag }}-linux-x86_64
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           path: build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
-          name: linux_x86_64_toolchain
+          name: linux-x86_64-toolchain
 
   publish_release:
       needs: ["build_linux_x64"]
@@ -77,6 +92,6 @@ jobs:
             name: LLVM Toolchain ${{ inputs.llvm_tag }}
             prerelease: true
             files: |
-              ${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
 
 
