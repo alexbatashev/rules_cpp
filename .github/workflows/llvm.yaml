@@ -92,7 +92,7 @@ jobs:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
-          export RT_TARGETS="x86_64-apple-darwin;aarch64-apple-darwin"
+          export RT_TARGETS="x86_64-apple-darwin"
           export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
           export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld"
 
