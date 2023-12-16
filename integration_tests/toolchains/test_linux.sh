@@ -4,6 +4,8 @@ set -eu
 
 bazel build //...
 bazel run //:test
+bazel run @cpp_tools//:refresh_compile_commands
+test -f "compile_commands.json"
 
 bazel run --crosstool_top=@llvm-17//:toolchain //:test
 bazel run --crosstool_top=@llvm-17//:toolchain -c dbg //:test

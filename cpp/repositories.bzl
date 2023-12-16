@@ -37,3 +37,22 @@ def download_llvm(mctx, repo_name, version):
         sha256 = clang_repo[version]["sha256"],
         build_file = "//cpp/private:llvm.BUILD",
     )
+
+def _tools_impl(rctx):
+    rctx.symlink(Label("//cpp/private:refresh_compile_commands.py"), "refresh_compile_commands.py")
+    # rctx.symlink("//cpp/private:tools.BUILD", "BUILD.bazel")
+    rctx.symlink(Label("//cpp/private:tools_rules.bzl"), "tools_rules.bzl")
+    build = rctx.read(Label("//cpp/private:tools.BUILD"))
+    rctx.file("WORKSPACE", executable=False)
+    rctx.file("BUILD", content=build)
+
+_tools = repository_rule(
+    implementation=_tools_impl,
+    configure=True,
+    # local=True,
+)
+
+def setup_tools(mctx, repo_name):
+    _tools(
+        name = repo_name,
+    )

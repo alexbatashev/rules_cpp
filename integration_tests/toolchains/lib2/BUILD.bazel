@@ -1,0 +1,5 @@
+cc_library(
+    name = "lib2",
+    srcs = ["foo.cpp"],
+    visibility = ["//visibility:public"],
+)
