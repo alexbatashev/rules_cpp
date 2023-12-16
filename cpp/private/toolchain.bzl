@@ -168,7 +168,7 @@ def _get_rpath_prefix(ctx):
 def _get_target_triple(target_cpu):
     if target_cpu == "k8":
         return "x86_64-linux-gnu"
-    elif target_cpu == "darwin":
+    elif target_cpu == "darwin" or target_cpu == "darwin_x64_64":
         return "x86_64-apple-darwin"
     elif target_cpu == "aarch64":
         return "aarch64-linux-gnu"

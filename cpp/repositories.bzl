@@ -6,10 +6,20 @@ load(
 _llvm_x64_linux = {
     "17.0.6": {
         "urls": [
-            "https://github.com/alexbatashev/rules_cpp/releases/download/llvmorg-17.0.6-7bda1fa2055d2e0bced545433ffcc78f52d57315/llvmorg-17.0.6-linux-x86_64.tar.zst",
+            "https://github.com/alexbatashev/rules_cpp/releases/download/llvmorg-17.0.6-4de414fea4aa1fef231c037044df08d7138fa14e/llvmorg-17.0.6-linux-x86_64.tar.zst",
         ],
         "strip_prefix": "llvmorg-17.0.6-linux-x86_64",
-        "sha256": "ec482ae8e4b2e96bfd350792dd74d97f9f0fdc559935255e8d5e597e5c79be1f",
+        "sha256": "54bf5ac76cf79491282a2318999d4bfc648d5b7da7341294c271c1c43151e2c4",
+    },
+}
+
+_llvm_x64_darwin = {
+    "17.0.6": {
+        "urls": [
+            "https://github.com/alexbatashev/rules_cpp/releases/download/llvmorg-17.0.6-4de414fea4aa1fef231c037044df08d7138fa14e/llvmorg-17.0.6-macos-x86_64.tar.zst",
+        ],
+        "strip_prefix": "llvmorg-17.0.6-macos-x86_64",
+        "sha256": "6f3ac3ef9d69b43fc93d01caef3f3fb2e9a5b742da775442970ad45a28ec0e50",
     },
 }
 
@@ -29,6 +39,8 @@ def download_llvm(mctx, repo_name, version):
         clang_repo = _llvm_x64_linux
     elif mctx.os.name == "mac os x" and mctx.os.arch == "aarch64":
         clang_repo = _llvm_aarch64_darwin
+    elif mctx.os.name == "mac os x" and mctx.os.arch == "x86_64":
+        clang_repo = _llvm_x64_darwin
 
     http_archive(
         name = repo_name,
@@ -40,7 +52,6 @@ def download_llvm(mctx, repo_name, version):
 
 def _tools_impl(rctx):
     rctx.symlink(Label("//cpp/private:refresh_compile_commands.py"), "refresh_compile_commands.py")
-    # rctx.symlink("//cpp/private:tools.BUILD", "BUILD.bazel")
     rctx.symlink(Label("//cpp/private:tools_rules.bzl"), "tools_rules.bzl")
     build = rctx.read(Label("//cpp/private:tools.BUILD"))
     rctx.file("WORKSPACE", executable=False)
@@ -49,7 +60,6 @@ def _tools_impl(rctx):
 _tools = repository_rule(
     implementation=_tools_impl,
     configure=True,
-    # local=True,
 )
 
 def setup_tools(mctx, repo_name):
