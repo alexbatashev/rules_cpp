@@ -92,7 +92,7 @@ jobs:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
-          export RT_TARGETS="x86_64-apple-darwin-macos;aarch64-apple-darwin-macos"
+          export RT_TARGETS="x86_64-apple-darwin;aarch64-apple-darwin-macos"
           export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
           export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld"
 
@@ -113,14 +113,17 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=$PWD/install/${{ inputs.llvm_tag }}-macos-x86_64 \
             -DLIBCXX_HERMETIC_STATIC_LIBRARY=ON \
             -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-            -DRUNTIMES_x86_64-apple-darwin-macos_OPENMP_LIBDIR_SUFFIX="/x86_64-apple-darwin-macos" -DRUNTIMES_x86_64-apple-darwin-macos_OPENMP_STANDALONE_BUILD=ON \
-            -DRUNTIMES_aarch64-apple-darwin-macos_OPENMP_LIBDIR_SUFFIX="/aarch64-apple-darwin-macos" -DRUNTIMES_aarch64-apple-darwin-macos_OPENMP_STANDALONE_BUILD=ON \
-            -DRUNTIMES_x86_64-apple-darwin-macos_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
-            -DRUNTIMES_x86_64-apple-darwin-macos_OPENMP_ENABLE_LIBOMPTARGET=OFF \
-            -DRUNTIMES_aarch64-apple-darwin-macos_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
-            -DRUNTIMES_aarch64-apple-darwin-macos_OPENMP_ENABLE_LIBOMPTARGET=OFF \
-            -DRUNTIMES_aarch64-apple-darwin-macos_LIBOMP_OMPD_GDB_SUPPORT=OFF \
+            -DRUNTIMES_x86_64-apple-darwin_OPENMP_LIBDIR_SUFFIX="/x86_64-apple-darwin" -DRUNTIMES_x86_64-apple-darwin_OPENMP_STANDALONE_BUILD=ON \
+            -DRUNTIMES_aarch64-apple-darwin_OPENMP_LIBDIR_SUFFIX="/aarch64-apple-darwin" -DRUNTIMES_aarch64-apple-darwin_OPENMP_STANDALONE_BUILD=ON \
+            -DRUNTIMES_x86_64-apple-darwin_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
+            -DRUNTIMES_x86_64-apple-darwin_OPENMP_ENABLE_LIBOMPTARGET=OFF \
+            -DRUNTIMES_aarch64-apple-darwin_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
+            -DRUNTIMES_aarch64-apple-darwin_OPENMP_ENABLE_LIBOMPTARGET=OFF \
+            -DRUNTIMES_aarch64-apple-darwin_LIBOMP_OMPD_GDB_SUPPORT=OFF \
             -DLLVM_TOOLCHAIN_TOOLS="$TOOLS" -DLLVM_DISTRIBUTION_COMPONENTS="$COMPONENTS;$TOOLS" \
+            -DRUNTIMES_BUILD_ALLOW_DARWIN=ON \
+            -DRUNTIMES_x86_64-apple-darwin_BUILD_ALLOW_DARWIN=ON \
+            -DRUNTIMES_aarch64-apple-darwin_BUILD_ALLOW_DARWIN=ON \
             ../llvm
 
           # FIXME: this requires too much RAM
