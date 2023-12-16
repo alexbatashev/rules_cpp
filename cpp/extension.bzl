@@ -17,7 +17,7 @@ _llvm = tag_class(
 _tools = tag_class(
     attrs = {
         "name": attr.string(),
-    }
+    },
 )
 
 cpp = module_extension(

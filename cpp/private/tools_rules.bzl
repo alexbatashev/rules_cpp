@@ -5,5 +5,5 @@ def refresh_compile_commands(name):
         srcs = [
             "refresh_compile_commands.py",
         ],
-        imports = [''],
+        imports = [""],
     )

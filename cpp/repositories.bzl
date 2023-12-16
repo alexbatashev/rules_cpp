@@ -54,12 +54,12 @@ def _tools_impl(rctx):
     rctx.symlink(Label("//cpp/private:refresh_compile_commands.py"), "refresh_compile_commands.py")
     rctx.symlink(Label("//cpp/private:tools_rules.bzl"), "tools_rules.bzl")
     build = rctx.read(Label("//cpp/private:tools.BUILD"))
-    rctx.file("WORKSPACE", executable=False)
-    rctx.file("BUILD", content=build)
+    rctx.file("WORKSPACE", executable = False)
+    rctx.file("BUILD", content = build)
 
 _tools = repository_rule(
-    implementation=_tools_impl,
-    configure=True,
+    implementation = _tools_impl,
+    configure = True,
 )
 
 def setup_tools(mctx, repo_name):
