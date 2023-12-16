@@ -1,6 +1,6 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 
-def get_compile_command_args(infile, outfile, toolchain, features):
+def get_compile_command_args(infile, outfile, toolchain, features, include_directories = None, pic = True):
     action = ACTION_NAMES.c_compile
     if infile.basename.endswith(".cpp") or infile.basename.endswith(".hpp"):
         action = ACTION_NAMES.cpp_compile
@@ -10,12 +10,14 @@ def get_compile_command_args(infile, outfile, toolchain, features):
         feature_configuration = features,
         source_file = infile.path,
         output_file = outfile.path,
-    ) 
+        include_directories = include_directories,
+        use_pic = pic,
+    )
 
     flags = cc_common.get_memory_inefficient_command_line(
         feature_configuration = features,
         action_name = action,
-        variables = variables
+        variables = variables,
     )
 
     return flags
@@ -28,7 +30,7 @@ def resolve_dependency_libraries(ctx, prefer_static):
             ctx: rule context
             prefer_static: True or False; prefer static library over shared with cc_library
     """
-    
+
     libs = []
     always_link_libs = []
 
@@ -38,11 +40,10 @@ def resolve_dependency_libraries(ctx, prefer_static):
             for item in input.libraries:
                 if not item.resolved_symlink_dynamic_library == None and (not prefer_static or item.pic_static_library == None):
                     libs.append(item.resolved_symlink_dynamic_library)
+                elif item.alwayslink:
+                    always_link_libs.append(item.pic_static_library)
                 else:
-                    if item.alwayslink:
-                        always_link_libs.append(item.pic_static_library)
-                    else:
-                        libs.append(item.pic_static_library)
+                    libs.append(item.pic_static_library)
 
     return depset(libs), depset(always_link_libs)
 
@@ -63,15 +64,23 @@ def resolve_linker_arguments(ctx, toolchain, features, output_file, is_linking_d
         feature_configuration = features,
         output_file = output_file,
         is_linking_dynamic_library = is_linking_dynamic_library,
-        library_search_directories = depset(link_dirs)
-    ) 
+        library_search_directories = depset(link_dirs),
+    )
 
     link_flags_frozen = cc_common.get_memory_inefficient_command_line(
         feature_configuration = features,
         action_name = ACTION_NAMES.cpp_link_dynamic_library,
-        variables = link_variables
+        variables = link_variables,
     )
 
     link_flags.extend(link_flags_frozen)
 
     return link_flags, libs
+
+def resolve_includes(ctx, external_includes):
+    includes = [ctx.bin_dir.path + "/_virtual_includes/" + ctx.attr.name]
+
+    includes.extend(ctx.attr.includes)
+    includes.extend(external_includes.to_list())
+
+    return depset(includes)
