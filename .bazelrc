@@ -1,1 +1,2 @@
 common --experimental_enable_bzlmod
+common --lockfile_mode=error

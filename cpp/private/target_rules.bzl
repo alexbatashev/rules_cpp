@@ -2,14 +2,7 @@
 Contains rules implementations for building C++ targets
 """
 
-load("@rules_cpp//cpp/private:common.bzl", "get_compile_command_args", "resolve_includes", "resolve_linker_arguments")
-
-HeadersInfo = provider(
-    fields = {
-        "headers": "a depset of all header files",
-        "includes": "a depset of all include paths",
-    },
-)
+load("@rules_cpp//cpp/private:common.bzl", "HeadersInfo", "create_compilation_context", "get_compile_command_args", "resolve_includes", "resolve_linker_arguments")
 
 def header_map_impl(ctx):
     """
@@ -68,30 +61,32 @@ def shlib_impl(ctx):
 
     features = cc_common.configure_features(ctx = ctx, cc_toolchain = toolchain, requested_features = ctx.features + ["pic", "supports_pic"], unsupported_features = ctx.disabled_features)
 
+    headers = generate_headers(ctx.attr.name, ctx.actions, ctx.bin_dir.path, ctx.attr.hdrs, ctx.attr.strip_include_prefix, ctx.attr.include_prefix)
+    comp_ctx = create_compilation_context(ctx, headers)
+
     obj_files = []
 
-    dep_includes = ctx.attr.header_map[HeadersInfo].includes
-    dep_headers = ctx.attr.header_map[HeadersInfo].headers
-
-    includes = resolve_includes(ctx, dep_includes)
-
-    headers = generate_headers(ctx.attr.name, ctx.actions, ctx.bin_dir.path, ctx.attr.hdrs, ctx.attr.strip_include_prefix, ctx.attr.include_prefix)
-
-    for src in ctx.files.srcs:
+    for src in comp_ctx.sources:
         outfile = ctx.actions.declare_file("_objs/" + src.basename + ".o")
-        args = get_compile_command_args(src, outfile, toolchain, features, include_directories = includes)
+        args = get_compile_command_args(
+            toolchain,
+            source = src.path,
+            output = outfile.path,
+            features = features,
+            include_directories = comp_ctx.includes,
+        )
         obj_files.append(outfile)
 
         ctx.actions.run(
             outputs = [outfile],
-            inputs = ctx.files.srcs + dep_headers.to_list(),
+            inputs = [src] + comp_ctx.headers + comp_ctx.dependency_headers.to_list(),
             executable = toolchain.compiler_executable,
             arguments = args,
             mnemonic = "CppCompile",
             progress_message = "Compiling %{output}",
         )
 
-    shlib = ctx.actions.declare_file("lib" + ctx.attr.name + ".so")
+    shlib = ctx.actions.declare_file(ctx.attr.lib_prefix + ctx.attr.name + ctx.attr.lib_suffix)
     link_flags, lib_inputs = resolve_linker_arguments(ctx, toolchain, features, shlib.path, True)
 
     for obj in obj_files:
@@ -110,7 +105,7 @@ def shlib_impl(ctx):
 
     compilation_ctx = cc_common.create_compilation_context(
         headers = depset(headers),
-        includes = includes,
+        includes = comp_ctx.includes,
     )
     lib_to_link = cc_common.create_library_to_link(
         actions = ctx.actions,

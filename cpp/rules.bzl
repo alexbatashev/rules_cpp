@@ -19,6 +19,8 @@ _shlib_attrs = {
     "include_prefix": attr.string(),
     "header_map": attr.label(),
     "includes": attr.string_list(),
+    "lib_prefix": attr.string(mandatory = True),
+    "lib_suffix": attr.string(mandatory = True),
     "_compiler": attr.label(
         default = "@bazel_tools//tools/cpp:toolchain",
         providers = [cc_common.CcToolchainInfo],
@@ -66,6 +68,15 @@ def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_pref
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
         header_map = name + ".headers",
+        lib_prefix = select({
+            "@bazel_tools//src/conditions:windows": "",
+            "//conditions:default": "lib",
+        }),
+        lib_suffix = select({
+            "@bazel_tools//src/conditions:windows": ".dll",
+            "@bazel_tools//src/conditions:darwin": ".dylib",
+            "//conditions:default": ".so",
+        }),
         **kwargs
     )
 

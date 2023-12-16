@@ -18,3 +18,5 @@ jobs:
       - uses: bazelbuild/setup-bazelisk@v2
       - name: Test toolchains
         run: cd integration_tests/toolchains && ./test.sh
+      - name: Test rules
+        run: cd integration_tests/rules && ./test.sh
