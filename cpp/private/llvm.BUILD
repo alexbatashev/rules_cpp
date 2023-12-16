@@ -72,5 +72,7 @@ cpp_toolchain(
     "k8",
     "aarch64",
     "darwin_arm64",
+    "darwin_x86_64",
+    "darwin",
   ]
 )

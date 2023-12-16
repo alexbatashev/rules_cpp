@@ -39,9 +39,8 @@ def download_llvm(mctx, repo_name, version):
         clang_repo = _llvm_x64_linux
     elif mctx.os.name == "mac os x" and mctx.os.arch == "aarch64":
         clang_repo = _llvm_aarch64_darwin
-    elif mctx.os.name == "mac os x" and mctx.os.arch == "amd64":
+    elif mctx.os.name == "mac os x" and mctx.os.arch == "x86_64":
         clang_repo = _llvm_x64_darwin
-    print(mctx.os.arch)
 
     http_archive(
         name = repo_name,
