@@ -8,17 +8,13 @@ on:
       - main
 
 jobs:
-  build_linux:
-    runs-on: ubuntu-latest
+  unix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-13]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: bazelbuild/setup-bazelisk@v2
       - name: Test toolchains
-        run: cd integration_tests/toolchains && ./test_linux.sh
-  build_macos:
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bazelbuild/setup-bazelisk@v2
-      - name: Test toolchains
-        run: cd integration_tests/toolchains && ./test_macos.sh
+        run: cd integration_tests/toolchains && ./test.sh
