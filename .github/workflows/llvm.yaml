@@ -132,7 +132,7 @@ jobs:
 
           cd install
 
-          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-x86_64.tar.zst ${{ inputs.llvm_tag }}-macos-x86_64
+          gnu-tar --zstd -cf ${{ inputs.llvm_tag }}-macos-x86_64.tar.zst ${{ inputs.llvm_tag }}-macos-x86_64
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
