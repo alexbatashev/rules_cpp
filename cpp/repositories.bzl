@@ -58,8 +58,8 @@ def _tools_impl(rctx):
     rctx.file("BUILD", content = build)
 
 _tools = repository_rule(
-    implementation=_tools_impl,
-    configure=True,
+    implementation = _tools_impl,
+    configure = True,
 )
 
 def setup_tools(mctx, repo_name):
