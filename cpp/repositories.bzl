@@ -51,7 +51,6 @@ def download_llvm(mctx, repo_name, version):
     )
 
 def _tools_impl(rctx):
-    rctx.symlink(Label("//cpp/private:refresh_compile_commands.py"), "refresh_compile_commands.py")
     rctx.symlink(Label("//cpp/private:tools_rules.bzl"), "tools_rules.bzl")
     build = rctx.read(Label("//cpp/private:tools.BUILD"))
     rctx.file("WORKSPACE", executable = False)
