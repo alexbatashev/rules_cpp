@@ -1,7 +1,7 @@
 load("//cpp/private:target_rules.bzl", "header_map_impl", "shlib_impl")
 load("//cpp/private:toolchain.bzl", "toolchain_impl")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
-load("//cpp/aspects.bzl", "CompileCommandsInfo", "compile_commands_aspect")
+load("//cpp:aspects.bzl", "CompileCommandsInfo", "compile_commands_aspect")
 
 _toolchain_attrs = {
     "toolchain_prefix": attr.string(mandatory = True),
@@ -142,8 +142,10 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
 def _collect_cpp_files_impl(ctx):
     sources = []
     for dep in ctx.attr.deps:
+        local_sources = []
         for src in dep[CompileCommandsInfo].sources:
-            sources.append(src.source)
+            local_sources.append(src.source)
+        sources.append(depset(local_sources))
 
     content = ""
     for src in depset(transitive = sources).to_list():
@@ -152,7 +154,7 @@ def _collect_cpp_files_impl(ctx):
     lst = ctx.actions.declare_file("sources.list")
     ctx.actions.write(output = lst, content = content)
 
-    return DefaultInfo(files = [lst])
+    return DefaultInfo(files = depset([lst]))
 
 collect_cpp_files = rule(
     implementation = _collect_cpp_files_impl,
@@ -164,29 +166,34 @@ collect_cpp_files = rule(
     },
 )
 
-def clang_format(name = "apply_clang_format"):
+def clang_format(name, deps):
     supported_targets = [
         "cc_binary",
         "cc_library",
         "cc_test",
         "cpp_shared_library",
     ]
-    deps = []
-    for rule_name, rule in native.existing_rules().items():
-        if rule["kind"] in supported_targets:
-            deps.append(rule_name)
+
+    resolved_deps = deps
+
+    if len(deps) == 0:
+        # FIXME(alexbatashev): this rule is very brittle.
+        # Need to find another way to resolve the issue
+        for rule_name, rule in native.existing_rules().items():
+            if rule["kind"] in supported_targets:
+                resolved_deps.append(rule_name)
 
     collect_cpp_files(
         name = name + ".sources",
-        deps = deps,
+        deps = resolved_deps,
     )
 
     native.py_binary(
         name = name,
-        srcs = ["//bazel/tools/clang_format:clang_format_runner.py"],
-        main = "clang_format_runner.py",
+        srcs = ["@rules_cpp//cpp/tools:run_clang_format.py"],
+        main = "run_clang_format.py",
         args = [
-            "$(location :clang_format_cpp_files)",
+            "$(location :" + name + ".sources)",
         ],
-        data = [":clang_format_cpp_files"],
+        data = [":" + name + ".sources"],
     )

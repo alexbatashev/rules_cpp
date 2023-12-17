@@ -13,11 +13,10 @@ def _compile_commands_aspect_impl(target, ctx):
 
     if hasattr(ctx.attr, "hdrs"):
         headers = generate_header_names(ctx.attr.name, ctx.actions, ctx.bin_dir.path, ctx.attr.hdrs, ctx.attr.strip_include_prefix, ctx.attr.include_prefix)
-    comp_ctx = create_compilation_context(ctx, headers)
+    comp_ctx = create_compilation_context(ctx, headers, True)
 
     toolchain = ctx.rule.attr._cc_toolchain[cc_common.CcToolchainInfo]
 
-    # .attr._compiler[cc_common.CcToolchainInfo]
     features = cc_common.configure_features(ctx = ctx, cc_toolchain = toolchain, requested_features = ctx.features + ["pic", "supports_pic"], unsupported_features = ctx.disabled_features)
 
     sources = []
@@ -26,7 +25,7 @@ def _compile_commands_aspect_impl(target, ctx):
             toolchain,
             source = src.path,
             features = features,
-            include_directories = comp_ctx.includes,
+            include_directories = depset(comp_ctx.includes),
         )
 
         sources.append(struct(

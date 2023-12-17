@@ -17,7 +17,10 @@ cc_binary(
     srcs = ["headers_database/main.cpp"],
     copts = ["-std=c++17"],
     visibility = ["//visibility:public"],
-    deps = [":common", ":third_party"],
+    deps = [
+        ":common",
+        ":third_party",
+    ],
 )
 
 cc_binary(
@@ -25,5 +28,10 @@ cc_binary(
     srcs = ["unused_headers/main.cpp"],
     copts = ["-std=c++17"],
     visibility = ["//visibility:public"],
-    deps = [":common", ":third_party"],
+    deps = [
+        ":common",
+        ":third_party",
+    ],
 )
+
+exports_files(["run_clang_format.py"])

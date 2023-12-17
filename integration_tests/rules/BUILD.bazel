@@ -1,11 +1,11 @@
-load("@rules_cpp//cpp:rules.bzl", "cpp_shared_library")
+load("@rules_cpp//cpp:rules.bzl", "clang_format", "cpp_shared_library")
 
 cc_library(
     name = "bar",
     srcs = [
         "src/bar.cpp",
         "src/bar.h",
-        "src/unused.h"
+        "src/unused.h",
     ],
     hdrs = ["src/bar.h"],
     include_prefix = "bar",
@@ -25,4 +25,13 @@ cc_binary(
     name = "main",
     srcs = ["src/main.cpp"],
     deps = [":foo"],
+)
+
+clang_format(
+    name = "apply_clang_format",
+    deps = [
+        ":bar",
+        ":foo",
+        ":main",
+    ],
 )
