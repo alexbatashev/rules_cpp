@@ -2,8 +2,9 @@
 Contains rules implementations for building C++ targets
 """
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cpp//cpp/private:common.bzl", "HeadersInfo", "create_compilation_context", "get_compile_command_args", "resolve_linker_arguments")
 
 def header_map_impl(ctx):
@@ -155,7 +156,7 @@ def shlib_impl(ctx):
         A tuple of providers
     """
 
-    toolchain = ctx.attr._compiler[cc_common.CcToolchainInfo]
+    toolchain = find_cpp_toolchain(ctx)
 
     features = cc_common.configure_features(ctx = ctx, cc_toolchain = toolchain, requested_features = ctx.features + ["no_agressive_strip"], unsupported_features = ctx.disabled_features)
 

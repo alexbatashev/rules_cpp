@@ -2,6 +2,4 @@
 
 #include <iostream>
 
-void bar() {
-    std::cout << "BAR\n";
-}
+void bar() { std::cout << "BAR\n"; }

@@ -7,7 +7,7 @@ HeadersInfo = provider(
     },
 )
 
-def create_compilation_context(ctx, headers = []):
+def create_compilation_context(ctx, headers = [], is_aspect = False):
     """
     Creates a compiler context structure to be used with C++ rules.
 
@@ -23,15 +23,22 @@ def create_compilation_context(ctx, headers = []):
     all_headers = []
     all_headers.extend(headers)
 
+    srcs = []
+
     if hasattr(ctx.files, "srcs"):
         srcs = ctx.files.srcs
+    elif is_aspect and hasattr(ctx.rule.files, "srcs"):
+        srcs = ctx.rule.files.srcs
 
-        for src in ctx.files.srcs:
-            if src.basename.endswith(".h") or src.basename.endswith(".hpp") or src.basename.endswith(".inc") or src.basename.endswith(".def"):
-                all_headers.append(src.path)
+    for src in srcs:
+        if src.basename.endswith(".h") or src.basename.endswith(".hpp") or src.basename.endswith(".inc") or src.basename.endswith(".def"):
+            all_headers.append(src.path)
 
     if hasattr(ctx.files, "textual_hdrs"):
         for src in ctx.files.textual_hdrs:
+            all_headers.append(src.path)
+    elif is_aspect and hasattr(ctx.rule.files, "textual_hdrs"):
+        for src in ctx.rule.files.textual_hdrs:
             all_headers.append(src.path)
 
     includes = []
@@ -135,3 +142,13 @@ def resolve_includes(ctx, external_includes):
     includes.extend(external_includes.to_list())
 
     return depset(includes)
+
+def generate_header_names(name, actions, bin_dir, hdrs, strip_include_prefix, include_prefix):
+    headers = []
+    for hdr in hdrs:
+        for file in hdr.files.to_list():
+            if not file.path.startswith(strip_include_prefix):
+                fail("Path " + file.path + " does not start with prefix " + strip_include_prefix)
+            target_path = "_virtual_includes/" + name + "/" + file.path.replace(strip_include_prefix, include_prefix)
+            headers.append(target_path)
+    return headers
