@@ -5,6 +5,7 @@ cc_library(
     srcs = [
         "src/bar.cpp",
         "src/bar.h",
+        "src/unused.h"
     ],
     hdrs = ["src/bar.h"],
     include_prefix = "bar",

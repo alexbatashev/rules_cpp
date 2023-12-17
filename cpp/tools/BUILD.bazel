@@ -1,0 +1,29 @@
+cc_library(
+    name = "common",
+    hdrs = glob(["common/*.hpp"]),
+    copts = ["-std=c++17"],
+    strip_include_prefix = "common",
+)
+
+cc_library(
+    name = "third_party",
+    hdrs = glob(["third_party/*.hpp"]),
+    copts = ["-std=c++17"],
+    strip_include_prefix = "third_party",
+)
+
+cc_binary(
+    name = "headers_database",
+    srcs = ["headers_database/main.cpp"],
+    copts = ["-std=c++17"],
+    visibility = ["//visibility:public"],
+    deps = [":common", ":third_party"],
+)
+
+cc_binary(
+    name = "unused_headers",
+    srcs = ["unused_headers/main.cpp"],
+    copts = ["-std=c++17"],
+    visibility = ["//visibility:public"],
+    deps = [":common", ":third_party"],
+)

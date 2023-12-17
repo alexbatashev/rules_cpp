@@ -37,9 +37,9 @@ def create_compilation_context(ctx, headers = []):
     includes = []
     dependency_headers = []
 
-    if hasattr(ctx.attr, "header_map"):
-        dep_includes = ctx.attr.header_map[HeadersInfo].includes
-        dep_headers = ctx.attr.header_map[HeadersInfo].headers
+    if hasattr(ctx.attr, "headers_db"):
+        dep_includes = ctx.attr.headers_db[HeadersInfo].includes
+        dep_headers = ctx.attr.headers_db[HeadersInfo].headers
 
         includes = resolve_includes(ctx, dep_includes)
         dependency_headers = dep_headers
@@ -89,7 +89,6 @@ def resolve_dependency_libraries(ctx, prefer_static):
         dep_libs = dep[CcInfo].linking_context.linker_inputs.to_list()
         for input in dep_libs:
             for item in input.libraries:
-                print(item)
                 if not item.resolved_symlink_dynamic_library == None and (not prefer_static or item.pic_static_library == None):
                     libs.append(item.resolved_symlink_dynamic_library)
                 elif not item.pic_static_library == None:
@@ -108,7 +107,6 @@ def resolve_linker_arguments(ctx, toolchain, features, output_file, is_linking_d
     link_dirs = []
     link_flags = []
     for lib in libs.to_list():
-        print(lib)
         link_dirs.append(lib.dirname)
         link_flags.append("-l:" + lib.basename)
 
