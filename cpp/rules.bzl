@@ -1,5 +1,7 @@
 load("//cpp/private:target_rules.bzl", "header_map_impl", "shlib_impl")
 load("//cpp/private:toolchain.bzl", "toolchain_impl")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
+load("//cpp/aspects.bzl", "CompileCommandsInfo", "compile_commands_aspect")
 
 _toolchain_attrs = {
     "toolchain_prefix": attr.string(mandatory = True),
@@ -21,10 +23,7 @@ _shlib_attrs = {
     "includes": attr.string_list(),
     "lib_prefix": attr.string(mandatory = True),
     "lib_suffix": attr.string(mandatory = True),
-    "_compiler": attr.label(
-        default = "@bazel_tools//tools/cpp:toolchain",
-        providers = [cc_common.CcToolchainInfo],
-    ),
+    "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
 }
 
 cpp_toolchain_config = rule(
@@ -47,6 +46,7 @@ _cpp_header_map = rule(
 _cpp_shared_library = rule(
     implementation = shlib_impl,
     attrs = _shlib_attrs,
+    toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
     provides = [DefaultInfo, CcInfo],
 )
@@ -127,4 +127,56 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
     native.cc_toolchain_suite(
         name = name,
         toolchains = toolchains,
+    )
+
+def _collect_cpp_files_impl(ctx):
+    sources = []
+    for dep in ctx.attr.deps:
+        for src in dep[CompileCommandsInfo].sources:
+            sources.append(src.source)
+
+    content = ""
+    for src in depset(transitive = sources).to_list():
+        content += src.path + "\n"
+
+    lst = ctx.actions.declare_file("sources.list")
+    ctx.actions.write(output = lst, content = content)
+
+    return DefaultInfo(files = [lst])
+
+collect_cpp_files = rule(
+    implementation = _collect_cpp_files_impl,
+    attrs = {
+        "deps": attr.label_list(
+            aspects = [compile_commands_aspect],
+            providers = [CcInfo],
+        ),
+    },
+)
+
+def clang_format(name = "apply_clang_format"):
+    supported_targets = [
+        "cc_binary",
+        "cc_library",
+        "cc_test",
+        "cpp_shared_library",
+    ]
+    deps = []
+    for rule_name, rule in native.existing_rules().items():
+        if rule["kind"] in supported_targets:
+            deps.append(rule_name)
+
+    collect_cpp_files(
+        name = name + ".sources",
+        deps = deps,
+    )
+
+    native.py_binary(
+        name = name,
+        srcs = ["//bazel/tools/clang_format:clang_format_runner.py"],
+        main = "clang_format_runner.py",
+        args = [
+            "$(location :clang_format_cpp_files)",
+        ],
+        data = [":clang_format_cpp_files"],
     )

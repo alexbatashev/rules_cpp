@@ -3,6 +3,7 @@ Contains rules implementations for building C++ targets
 """
 
 load("@rules_cpp//cpp/private:common.bzl", "HeadersInfo", "create_compilation_context", "get_compile_command_args", "resolve_includes", "resolve_linker_arguments")
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 
 def header_map_impl(ctx):
     """
@@ -57,7 +58,7 @@ def shlib_impl(ctx):
         A tuple of providers
     """
 
-    toolchain = ctx.attr._compiler[cc_common.CcToolchainInfo]
+    toolchain = find_cpp_toolchain(ctx)
 
     features = cc_common.configure_features(ctx = ctx, cc_toolchain = toolchain, requested_features = ctx.features + ["pic", "supports_pic"], unsupported_features = ctx.disabled_features)
 

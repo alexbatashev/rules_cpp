@@ -51,7 +51,6 @@ def create_compilation_context(ctx, headers = []):
         includes = includes,
     )
 
-
 def get_compile_command_args(toolchain, source = None, output = None, features = None, include_directories = None, pic = True):
     action = ACTION_NAMES.c_compile
     if source.endswith(".cpp") or source.endswith(".hpp"):
@@ -138,3 +137,13 @@ def resolve_includes(ctx, external_includes):
     includes.extend(external_includes.to_list())
 
     return depset(includes)
+
+def generate_header_names(name, actions, bin_dir, hdrs, strip_include_prefix, include_prefix):
+    headers = []
+    for hdr in hdrs:
+        for file in hdr.files.to_list():
+            if not file.path.startswith(strip_include_prefix):
+                fail("Path " + file.path + " does not start with prefix " + strip_include_prefix)
+            target_path = "_virtual_includes/" + name + "/" + file.path.replace(strip_include_prefix, include_prefix)
+            headers.append(target_path)
+    return headers
