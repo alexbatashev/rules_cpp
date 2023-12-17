@@ -1,6 +1,5 @@
 import argparse
 import subprocess
-import re
 import os
 
 parser = argparse.ArgumentParser()

@@ -14,7 +14,4 @@ cpp.llvm(
     name = "llvm-17",
     version = "17.0.6",
 )
-cpp.tools(
-    name = "cpp_tools",
-)
 use_repo(cpp, "cpp_tools", "llvm-17")

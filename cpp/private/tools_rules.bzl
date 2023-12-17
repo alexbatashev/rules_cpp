@@ -3,7 +3,7 @@ def refresh_compile_commands(name):
         name = name,
         main = "refresh_compile_commands.py",
         srcs = [
-            "refresh_compile_commands.py",
+            "@rules_cpp//cpp/tools:refresh_compile_commands.py",
         ],
         imports = [""],
     )
