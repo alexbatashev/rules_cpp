@@ -17,13 +17,18 @@ _shlib_attrs = {
     "deps": attr.label_list(providers = [CcInfo]),
     "strip_include_prefix": attr.string(),
     "include_prefix": attr.string(),
-    "header_map": attr.label(),
+    "headers_db": attr.label(),
     "includes": attr.string_list(),
     "lib_prefix": attr.string(mandatory = True),
     "lib_suffix": attr.string(mandatory = True),
     "_compiler": attr.label(
         default = "@bazel_tools//tools/cpp:toolchain",
         providers = [cc_common.CcToolchainInfo],
+    ),
+    "_unused_headers": attr.label(
+        default = "//cpp/tools:unused_headers",
+        executable = True,
+        cfg = "exec",
     ),
 }
 
@@ -41,6 +46,11 @@ _cpp_header_map = rule(
         "deps": attr.label_list(providers = [CcInfo]),
         "strip_include_prefix": attr.string(),
         "include_prefix": attr.string(),
+        "_headers_database": attr.label(
+            default = "//cpp/tools:headers_database",
+            executable = True,
+            cfg = "exec",
+        ),
     },
 )
 
@@ -67,7 +77,7 @@ def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_pref
         deps = deps,
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
-        header_map = name + ".headers",
+        headers_db = name + ".headers",
         lib_prefix = select({
             "@bazel_tools//src/conditions:windows": "",
             "//conditions:default": "lib",
