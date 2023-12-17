@@ -1,4 +1,4 @@
-load("//cpp:repositories.bzl", "download_llvm", "setup_tools")
+load("//cpp:repositories.bzl", "download_llvm")
 
 def _init_toolchain(ctx):
     for mod in ctx.modules:
@@ -14,5 +14,5 @@ _llvm = tag_class(
 
 cpp = module_extension(
     implementation = _init_toolchain,
-    tag_classes = {"llvm": _llvm, "tools": _tools},
+    tag_classes = {"llvm": _llvm},
 )
