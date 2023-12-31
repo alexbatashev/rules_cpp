@@ -1,7 +1,8 @@
-load("@rules_cpp//cpp:rules.bzl", "cpp_toolchain")
+load("@rules_cpp//cpp:rules.bzl", "declare_clang_toolchains")
+load("@rules_cpp//cpp/private:tool.bzl", "tool")
 
 filegroup(
-  name = "clang",
+  name = "clang-files",
   srcs = glob([
     "bin/clang*",
     "lib/clang/**/*",
@@ -24,6 +25,16 @@ filegroup(
   visibility = ["//visibility:public"],
 )
 
+tool(
+  name = "strip",
+  executable = "bin/llvm-strip",
+)
+
+tool(
+  name = "ar",
+  executable = "bin/llvm-ar",
+)
+
 filegroup(
   name = "openmp",
   srcs = glob([
@@ -33,12 +44,19 @@ filegroup(
 )
 
 filegroup(
-  name = "lld",
+  name = "lld-files",
   srcs = [
     "bin/lld",
     "bin/ld.lld"
   ],
   visibility = ["//visibility:public"],
+)
+
+tool(
+  name = "lld",
+  executable = "bin/lld",
+  visibility = ["//visibility:public"],
+  data = [":lld-files"]
 )
 
 filegroup(
@@ -61,18 +79,28 @@ filegroup(
   visibility = ["//visibility:public"],
 )
 
-cpp_toolchain(
+tool(
+  name = "clang",
+  executable = "bin/clang",
+  data = [
+    ":clang-files",
+    ":binutils",
+    ":lld",
+    ":openmp",
+    ":lld",
+    ":libc++",
+    ":static_libc++",
+  ]
+  visibility = ["//visibility:public"],
+)
+
+declare_clang_toolchains(
   name = "toolchain",
   compiler = ":clang",
   linker = ":lld",
   stdlib = ":libc++",
   static_stdlib = ":static_libc++",
   binutils = ":binutils",
-  target_cpus = [
-    "k8",
-    "aarch64",
-    "darwin_arm64",
-    "darwin_x86_64",
-    "darwin",
-  ]
+  strip = ":strip",
+  archiver = ":ar",
 )

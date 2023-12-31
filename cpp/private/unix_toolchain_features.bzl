@@ -109,10 +109,10 @@ def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_pre
                 actions = all_link_actions,
                 flag_groups = [
                     flag_group(
-                        flags = ["-Wl,-nostdlib"],
+                        flags = ["-nostdlib"],
                     ),
                     flag_group(
-                        flags = ["-L" + d for d in link_dirs],
+                        flags = ["-Wl,-L" + d for d in link_dirs],
                     ),
                     flag_group(
                         flags = ["-Wl,-rpath," + exec_rpath_prefix + d for d in link_dirs],
@@ -126,7 +126,7 @@ def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_pre
                         expand_if_available = "strip_debug_symbols",
                     ),
                     flag_group(
-                        flags = ["-L%{library_search_directories}"],
+                        flags = ["-Wl,-L%{library_search_directories}"],
                         iterate_over = "library_search_directories",
                         expand_if_available = "library_search_directories",
                     ),

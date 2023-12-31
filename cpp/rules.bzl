@@ -8,11 +8,14 @@ load("//cpp/private/actions:strip.bzl", "cpp_strip_objects")
 
 _toolchain_attrs = {
     "toolchain_prefix": attr.string(mandatory = True),
-    "binutils": attr.label(),
-    "compiler": attr.label(),
-    "linker": attr.label(),
-    "stdlib": attr.label(),
+    "compiler": attr.label(mandatory = True),
+    "linker": attr.label(mandatory = True),
+    "archiver": attr.label(mandatory = True),
+    "binutils": attr.label(mandatory = True),
+    "strip": attr.label(mandatory = True),
+    "stdlib": attr.label(mandatory = True),
     "target_cpu": attr.string(mandatory = True),
+    "target_os": attr.string(mandatory = True),
     "host_cpu": attr.string(mandatory = True),
 }
 
@@ -77,7 +80,7 @@ def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_pref
         **kwargs
     )
 
-def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, target_cpus):
+def declare_clang_toolchains(name, compiler, linker, stdlib, static_stdlib, binutils, strip, archiver):
     native.filegroup(
         name = name + "-files",
         srcs = [
@@ -98,9 +101,15 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
             os = "@platforms//os:linux",
             target_cpu = "@platforms//cpu:aarch64",
         ),
+        struct(
+            os = "@platforms//os:macos",
+            target_cpu = "@platforms//cpu:aarch64",
+        ),
+        struct(
+            os = "@platforms//os:macos",
+            target_cpu = "@platforms//cpu:x86_64",
+        ),
     ]
-
-    toolchains = {}
 
     for p in PLATFORMS:
         cpu = Label(p.target_cpu).name
@@ -112,8 +121,11 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
             linker = linker,
             stdlib = stdlib,
             binutils = binutils,
+            strip = strip,
+            archiver = archiver,
             target_cpu = cpu,
             host_cpu = cpu,
+            target_os = os,
         )
 
         native.cc_toolchain(
@@ -135,8 +147,8 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
         native.toolchain(
             name = name + "-" + os + "-" + cpu,
             exec_compatible_with = [
-                "@platforms//os:linux",
-                "@platforms//cpu:x86_64",
+                p.os,
+                p.target_cpu,
             ],
             target_compatible_with = [
                 p.os,
