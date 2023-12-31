@@ -14,4 +14,10 @@ cpp.llvm(
     name = "llvm-17",
     version = "17.0.6",
 )
-use_repo(cpp, "cpp_tools", "llvm-17")
+use_repo(cpp, "llvm-17")
+
+register_toolchains("@llvm-17//:toolchain-linux-x86_64")
+
+register_toolchains("@llvm-17//:toolchain-macos-x86_64")
+
+register_toolchains("@llvm-17//:toolchain-macos-aarch64")

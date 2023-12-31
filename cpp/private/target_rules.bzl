@@ -8,6 +8,7 @@ load("//cpp/private:common.bzl", "collect_external_headers", "collect_external_i
 load("//cpp/private:extra_actions.bzl", "EXTRA_ACTIONS")
 load("//cpp/private/actions:compile.bzl", "cpp_compile")
 load("//cpp/private/actions:strip.bzl", "cpp_strip_binary", "cpp_strip_objects")
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 
 def _has_agressive_strip(features, _toolchain):
     # FIXME(alexbatashev): does not work with default toolchain
@@ -62,17 +63,22 @@ def shlib_impl(ctx):
     for obj in obj_files:
         link_flags.append(obj.path)
 
+    linker = cc_common.get_tool_for_action(
+        feature_configuration = features,
+        action_name = ACTION_NAMES.cpp_link_dynamic_library,
+    )
+
     ctx.actions.run(
         outputs = [compile_output],
-        inputs = obj_files + lib_inputs.to_list() + headers,
-        executable = toolchain.compiler_executable,
+        inputs = depset(obj_files, transitive = [lib_inputs, toolchain.all_files]),
+        executable = linker,
         arguments = link_flags,
         mnemonic = "CppLink",
         progress_message = "Compiling %{output}",
     )
 
     if _has_agressive_strip(features, toolchain):
-        cpp_strip_binary(compile_output, compile_output, shlib, toolchain)
+        cpp_strip_binary(compile_output, compile_output, shlib, features, toolchain)
 
     default_provider = DefaultInfo(files = depset([shlib]))
 
@@ -141,12 +147,17 @@ def module_impl(ctx):
         },
     )
 
+    compiler = cc_common.get_tool_for_action(
+        feature_configuration = features,
+        action_name = ACTION_NAMES.cpp_compile,
+    )
+
     ctx.actions.run(
         outputs = [pcm],
         mnemonic = "CppModulePrecompile",
-        inputs = ctx.files.interface + headers,
+        inputs = depset(ctx.files.interface, transitive = [depset(headers), toolchain.all_files]),
         arguments = precompile_args,
-        executable = toolchain.compiler_executable,
+        executable = compiler,
         progress_message = "Precompiling %{output}",
     )
 

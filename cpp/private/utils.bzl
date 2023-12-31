@@ -1,14 +1,12 @@
 def is_clang(target):
-    for file in target.files.to_list():
-        if "clang" in file.path:
-            return True
+    if "clang" in target.path:
+        return True
 
     return False
 
 def is_lld(target):
-    for file in target.files.to_list():
-        if "lld" in file.path:
-            return True
+    if "lld" in target.path:
+        return True
 
     return False
 

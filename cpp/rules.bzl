@@ -8,11 +8,14 @@ load("//cpp/private/actions:strip.bzl", "cpp_strip_objects")
 
 _toolchain_attrs = {
     "toolchain_prefix": attr.string(mandatory = True),
-    "binutils": attr.label(),
-    "compiler": attr.label(),
-    "linker": attr.label(),
-    "stdlib": attr.label(),
+    "compiler": attr.label(mandatory = True),
+    "linker": attr.label(mandatory = True),
+    "archiver": attr.label(mandatory = True),
+    "binutils": attr.label(mandatory = True),
+    "strip": attr.label(mandatory = True),
+    "stdlib": attr.label(mandatory = True),
     "target_cpu": attr.string(mandatory = True),
+    "target_os": attr.string(mandatory = True),
     "host_cpu": attr.string(mandatory = True),
 }
 
@@ -77,7 +80,7 @@ def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_pref
         **kwargs
     )
 
-def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, target_cpus):
+def declare_clang_toolchains(name, compiler, linker, stdlib, static_stdlib, binutils, strip, archiver):
     native.filegroup(
         name = name + "-files",
         srcs = [
@@ -89,22 +92,44 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
         ],
     )
 
-    toolchains = {}
+    PLATFORMS = [
+        struct(
+            os = "@platforms//os:linux",
+            target_cpu = "@platforms//cpu:x86_64",
+        ),
+        struct(
+            os = "@platforms//os:linux",
+            target_cpu = "@platforms//cpu:aarch64",
+        ),
+        struct(
+            os = "@platforms//os:macos",
+            target_cpu = "@platforms//cpu:aarch64",
+        ),
+        struct(
+            os = "@platforms//os:macos",
+            target_cpu = "@platforms//cpu:x86_64",
+        ),
+    ]
 
-    for cpu in target_cpus:
+    for p in PLATFORMS:
+        cpu = Label(p.target_cpu).name
+        os = Label(p.os).name
         cpp_toolchain_config(
-            name = name + "-" + cpu + "-config",
+            name = name + "-" + os + "-" + cpu + "-config",
             toolchain_prefix = name,
             compiler = compiler,
             linker = linker,
             stdlib = stdlib,
             binutils = binutils,
+            strip = strip,
+            archiver = archiver,
             target_cpu = cpu,
             host_cpu = cpu,
+            target_os = os,
         )
 
         native.cc_toolchain(
-            name = name + "-" + cpu + "-toolchain",
+            name = name + "-" + os + "-" + cpu + "-toolchain",
             all_files = name + "-files",
             ar_files = name + "-files",
             as_files = name + "-files",
@@ -115,16 +140,23 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
             strip_files = name + "-files",
             static_runtime_lib = static_stdlib,
             supports_param_files = 1,
-            toolchain_config = ":" + name + "-" + cpu + "-config",
-            toolchain_identifier = name + "-" + cpu + "-toolchain",
+            toolchain_config = ":" + name + "-" + os + "-" + cpu + "-config",
+            toolchain_identifier = name + "-" + os + "-" + cpu + "-toolchain",
         )
 
-        toolchains[cpu] = name + "-" + cpu + "-toolchain"
-
-    native.cc_toolchain_suite(
-        name = name,
-        toolchains = toolchains,
-    )
+        native.toolchain(
+            name = name + "-" + os + "-" + cpu,
+            exec_compatible_with = [
+                p.os,
+                p.target_cpu,
+            ],
+            target_compatible_with = [
+                p.os,
+                p.target_cpu,
+            ],
+            toolchain = ":" + name + "-" + os + "-" + cpu + "-toolchain",
+            toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+        )
 
 def _collect_cpp_files_impl(ctx):
     sources = []

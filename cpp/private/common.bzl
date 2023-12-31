@@ -119,7 +119,16 @@ def resolve_linker_arguments(ctx, toolchain, features, output_file, is_linking_d
     link_flags = []
     for lib in libs.to_list():
         link_dirs.append(lib.dirname)
-        link_flags.append("-l:" + lib.basename)
+        lib_name = lib.basename
+        if lib_name.startswith("lib"):
+            lib_name = lib_name[3:]
+        if lib_name.endswith(".a"):
+            lib_name = lib_name[:-2]
+        if lib_name.endswith(".so"):
+            lib_name = lib_name[:-3]
+        if lib_name.endswith(".dylib"):
+            lib_name = lib_name[:-6]
+        link_flags.append("-l" + lib_name)
 
     link_variables = cc_common.create_link_variables(
         cc_toolchain = toolchain,

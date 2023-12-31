@@ -10,8 +10,7 @@ load(
     "feature_set",
     "flag_group",
     "flag_set",
-    "tool",
-    "tool_path",
+    "with_feature_set",
 )
 load(
     "//cpp/private:extra_actions.bzl",
@@ -42,75 +41,12 @@ load(
     "werror_flags",
 )
 load("//cpp/private:utils.bzl", "is_clang", "is_libcpp", "is_lld", "is_llvm")
-
-def _get_tool_path(_target, path):
-    return path
-    # TODO: figure out how to use this
-    # return target.label.workspace_root + "/" + path
-
-def _get_compiler(target, tool):
-    if is_clang(target):
-        if tool == "cpp":
-            return _get_tool_path(target, "bin/clang-cpp")
-        elif tool == "c++":
-            return _get_tool_path(target, "bin/clang++")
-        elif tool == "gcc":
-            return _get_tool_path(target, "bin/clang")
-    return _get_tool_path(target, "bin/" + tool)
-
-def _get_linker(target):
-    if is_lld(target):
-        return _get_tool_path(target, "bin/ld.lld")
-    return _get_tool_path(target, "bin/ld")
-
-def _get_tool(target, tool):
-    if tool == "ld":
-        return _get_linker(target)
-
-    if tool == "cpp" or tool == "c++" or tool == "gcc":
-        return _get_compiler(target, tool)
-
-    if tool == "gcov":
-        if is_llvm(target):
-            return _get_tool_path(target, "bin/llvm-cov")
-        return _get_tool_path(target, "bin/gcov")
-
-    if tool == "nm":
-        if is_llvm(target):
-            return _get_tool_path(target, "bin/llvm-nm")
-        return _get_tool_path(target, "bin/nm")
-
-    if tool == "objcopy":
-        if is_llvm(target):
-            return _get_tool_path(target, "bin/llvm-objcopy")
-        return _get_tool_path(target, "bin/objcopy")
-
-    if tool == "objdump":
-        if is_llvm(target):
-            return _get_tool_path(target, "bin/llvm-objdump")
-        return _get_tool_path(target, "bin/objdump")
-
-    if tool == "strip":
-        if is_llvm(target):
-            return _get_tool_path(target, "bin/llvm-strip")
-        return _get_tool_path(target, "bin/strip")
-
-    if tool == "ar":
-        if is_llvm(target):
-            return _get_tool_path(target, "bin/llvm-ar")
-        return _get_tool_path(target, "bin/ar")
-
-    if tool == "dwp":
-        if is_llvm(target):
-            return _get_tool_path(target, "bin/llvm-dwp")
-        return _get_tool_path(target, "bin/dwp")
-
-    return "unkown_tool_" + tool
+load("//cpp/private:tool.bzl", "ToolInfo")
 
 def _get_include_paths(stdlib, compiler):
     include_dirs = []
     stdlib_base = stdlib.label.workspace_root + "/"
-    compiler_base = compiler.label.workspace_root + "/"
+    compiler_base = compiler.root.path + "/../"
     if is_libcpp(stdlib):
         include_dirs += [
             stdlib_base + "include/c++/v1",
@@ -119,20 +55,15 @@ def _get_include_paths(stdlib, compiler):
         ]
 
     if is_clang(compiler):
-        include_dirs += [
+        include_dirs.append(
             compiler_base + "lib/clang/17/include",
-        ]
+        )
 
     return include_dirs
 
-def _get_linker_flag(linker):
-    if is_lld(linker):
-        return ["-fuse-ld=lld"]
-    return []
-
 def _get_link_paths(stdlib, compiler):
     stdlib_base = stdlib.label.workspace_root + "/"
-    compiler_base = compiler.label.workspace_root + "/"
+    compiler_base = compiler.dirname + "/../"
 
     link_dirs = [stdlib_base + "lib"]
 
@@ -142,27 +73,27 @@ def _get_link_paths(stdlib, compiler):
     return link_dirs
 
 def _get_exec_rpath_prefix(ctx):
-    if ctx.attr.target_cpu in ["aarch64", "k8"]:
+    if ctx.attr.target_os in ["linux"]:
         return "$EXECROOT/"
-    elif ctx.attr.target_cpu in ["darwin", "darwin_arm64"]:
+    elif ctx.attr.target_os in ["macos"]:
         return "@loader_path/../../../"
     return None
 
 def _get_rpath_prefix(ctx):
-    if ctx.attr.target_cpu in ["aarch64", "k8"]:
+    if ctx.attr.target_os in ["linux"]:
         return "$ORIGIN/"
-    elif ctx.attr.target_cpu in ["darwin", "darwin_arm64"]:
+    elif ctx.attr.target_os in ["macos"]:
         return "@loader_path/"
     return None
 
-def _get_target_triple(target_cpu):
-    if target_cpu == "k8":
+def _get_target_triple(target_cpu, target_os):
+    if target_cpu == "x86_64" and target_os == "linux":
         return "x86_64-linux-gnu"
-    elif target_cpu == "darwin" or target_cpu == "darwin_x64_64":
+    elif target_cpu == "x86_64" and target_os == "macos":
         return "x86_64-apple-darwin"
-    elif target_cpu == "aarch64":
+    elif target_cpu == "aarch64" and target_os == "linux":
         return "aarch64-linux-gnu"
-    elif target_cpu == "darwin_arm64":
+    elif target_cpu == "aarch64" and target_os == "macos":
         return "aarch64-apple-darwin"
 
     return "unknown-unknown-unknown"
@@ -175,7 +106,7 @@ def _get_clang_features(ctx):
             flag_set(
                 actions = all_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [flag_group(flags = [
-                    "--target=" + _get_target_triple(ctx.attr.target_cpu),
+                    "--target=" + _get_target_triple(ctx.attr.target_cpu, ctx.attr.target_os),
                 ])],
             ),
         ],
@@ -191,33 +122,38 @@ def _get_clang_features(ctx):
         )],
     )
 
+    compiler_base = ctx.attr.compiler[ToolInfo].executable.dirname
+
     static_stdlib_flags = [
         "-lc",
         "-Wno-unused-command-line-argument",
         "-static-libstdc++",
-        "-l:libc++abi.a",
-        "-l:libc++.a",
-        "-l:libunwind.a",
+        compiler_base + "/../lib/libc++abi.a",
+        compiler_base + "/../lib/libc++.a",
+        compiler_base + "/../lib/libunwind.a",
         "-static-libgcc",
     ]
 
-    static_stdlib_feature = feature(
-        name = "static_stdlib",
-        flag_sets = [
-            flag_set(
-                actions = all_link_actions,
-                flag_groups = [flag_group(flags = static_stdlib_flags)],
-            ),
-        ],
-    )
+    dynamic_stdlib_flags = [
+        "-lc",
+        "-lc++abi",
+        "-lc++",
+        "-lunwind",
+    ]
 
-    # FIXME(alexbatashev): figure out how to use the default feature so that we don't need a custom one
-    static_link_cpp_runtimes_feature = feature(
-        name = "static_link_cpp_runtimes",
+    stdlib_feature = feature(
+        name = "stdlib",
+        enabled = True,
         flag_sets = [
             flag_set(
                 actions = all_link_actions,
                 flag_groups = [flag_group(flags = static_stdlib_flags)],
+                with_features = [with_feature_set(features = ["static_link_cpp_runtimes"])],
+            ),
+            flag_set(
+                actions = all_link_actions,
+                flag_groups = [flag_group(flags = dynamic_stdlib_flags)],
+                with_features = [with_feature_set(not_features = ["static_link_cpp_runtimes"])],
             ),
         ],
     )
@@ -238,43 +174,38 @@ def _get_clang_features(ctx):
         ],
     )
 
+    lld_feature = feature(
+        name = "use_lld",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = all_link_actions,
+                flag_groups = [
+                    flag_group(
+                        flags = ["-fuse-ld=lld"],
+                    ),
+                ],
+            ),
+        ],
+    )
+
     return [
         triple_feature,
         weverything_feature,
-        static_stdlib_feature,
-        static_link_cpp_runtimes_feature,
+        stdlib_feature,
         module_interface_precompile_feature,
+        lld_feature,
     ]
 
-def _get_tools(compiler, binutils, linker, stdlib):
+def _get_action_configs(compiler, strip, archiver):
     return [
-        tool_path(name = "ar", path = _get_tool(binutils, "ar")),
-        tool_path(name = "ld", path = _get_tool(linker, "ld")),
-        tool_path(name = "cpp", path = _get_tool(compiler, "cpp")),
-        tool_path(name = "gcc", path = _get_tool(compiler, "gcc")),
-        tool_path(name = "dwp", path = _get_tool(binutils, "dwp")),
-        tool_path(name = "gcov", path = _get_tool(binutils, "gcov")),
-        tool_path(name = "nm", path = _get_tool(binutils, "nm")),
-        tool_path(name = "objcopy", path = _get_tool(binutils, "objcopy")),
-        tool_path(name = "objdump", path = _get_tool(binutils, "objdump")),
-        tool_path(name = "strip", path = _get_tool(binutils, "strip")),
-    ]
-
-def _get_action_configs(compiler, binutils, _linker):
-    return [
-        action_config(action_name = name, enabled = True, tools = [tool(path = _get_tool(compiler, "gcc"))])
-        for name in all_c_compile_actions
+        action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = compiler)])
+        for name in all_c_compile_actions + all_cpp_compile_actions + all_link_actions
     ] + [
-        action_config(action_name = name, enabled = True, tools = [tool(path = _get_tool(compiler, "c++"))])
-        for name in all_cpp_compile_actions
-    ] + [
-        action_config(action_name = name, enabled = True, tools = [tool(path = _get_tool(compiler, "c++"))])
-        for name in all_link_actions
-    ] + [
-        action_config(action_name = name, enabled = True, tools = [tool(path = _get_tool(binutils, "ar"))])
+        action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = archiver)])
         for name in [ACTION_NAMES.cpp_link_static_library]
     ] + [
-        action_config(action_name = name, enabled = True, tools = [tool(path = _get_tool(binutils, "strip"))])
+        action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = strip)])
         for name in [ACTION_NAMES.strip]
     ]
 
@@ -325,17 +256,17 @@ def bazel_toolchain_impl(ctx):
     C++ toolchain for builtin Bazel rules
     """
 
-    compiler = ctx.attr.compiler
-    binutils = ctx.attr.binutils
-    linker = ctx.attr.linker
+    compiler = ctx.attr.compiler[ToolInfo].executable
+
+    # linker = ctx.attr.tools['linker'][DefaultInfo].executable
+    archiver = ctx.attr.archiver[ToolInfo].executable
+    strip = ctx.attr.linker[ToolInfo].executable
     stdlib = ctx.attr.stdlib
 
     include_dirs = _get_include_paths(stdlib, compiler)
     link_dirs = _get_link_paths(stdlib, compiler)
 
-    tool_paths = _get_tools(compiler, binutils, linker, stdlib)
-
-    action_configs = _get_action_configs(compiler, binutils, linker)
+    action_configs = _get_action_configs(compiler, strip, archiver)
 
     std_compile_flags = ["-std=c++17"]
 
@@ -346,9 +277,9 @@ def bazel_toolchain_impl(ctx):
 
     features = _get_default_features(ctx, compiler, std_compile_flags, include_dirs, link_dirs)
     if is_clang(compiler):
-        features += _get_clang_features()
+        features += _get_clang_features(ctx)
 
-    if ctx.attr.target_cpu in ["darwin", "darwin_arm64"]:
+    if ctx.attr.target_os in ["macos"]:
         features.append(darwin_default_feature)
 
     features += _get_final_features()
@@ -356,7 +287,7 @@ def bazel_toolchain_impl(ctx):
     sysroot = None
 
     # FIXME: completely seal the toolchain?
-    include_dirs.append("/usr/include")
+    include_dirs.append("/usr/include/")
     include_dirs.append("/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include")
 
     return cc_common.create_cc_toolchain_config_info(
@@ -369,12 +300,13 @@ def bazel_toolchain_impl(ctx):
         host_system_name = ctx.attr.toolchain_prefix + "-" + ctx.attr.host_cpu,
         target_system_name = ctx.attr.toolchain_prefix + "-" + ctx.attr.target_cpu,
         target_cpu = ctx.attr.target_cpu,
+        cc_target_os = ctx.attr.target_os,
+        compiler = "clang",
+        tool_paths = [],
 
         # These attributes aren't meaningful at all so just use placeholder
         # values.
         target_libc = "local",
-        compiler = "local",
         abi_version = "local",
         abi_libc_version = "local",
-        tool_paths = tool_paths,
     )
