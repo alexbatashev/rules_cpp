@@ -1,5 +1,5 @@
 load("//cpp/private:target_rules.bzl", "header_map_impl", "module_impl", "shlib_impl")
-load("//cpp/private:toolchain.bzl", "toolchain_impl")
+load("//cpp/private:toolchain.bzl", "bazel_toolchain_impl")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
 load("//cpp:aspects.bzl", "CompileCommandsInfo", "compile_commands_aspect")
 load("//cpp:providers.bzl", "CppModuleInfo")
@@ -42,7 +42,7 @@ _module_attrs = {
 }
 
 cpp_toolchain_config = rule(
-    implementation = toolchain_impl,
+    implementation = bazel_toolchain_impl,
     attrs = _toolchain_attrs,
     provides = [CcToolchainConfigInfo],
 )
