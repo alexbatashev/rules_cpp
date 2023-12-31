@@ -1,1 +1,2 @@
 common --experimental_enable_bzlmod
+common --experimental_rule_extension_api 

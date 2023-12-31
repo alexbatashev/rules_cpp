@@ -1,11 +1,19 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 
-HeadersInfo = provider(
-    fields = {
-        "headers": "a depset of all header files",
-        "includes": "a depset of all include paths",
-    },
-)
+def collect_external_headers(deps):
+    headers = []
+
+    for dep in deps:
+        headers.extend(dep[CcInfo].compilation_context.direct_public_headers)
+        headers.extend(dep[CcInfo].compilation_context.direct_textual_headers)
+
+    return headers
+
+def collect_external_includes(deps):
+    includes = []
+    for dep in deps:
+        includes.extend(dep[CcInfo].compilation_context.includes.to_list())
+    return depset(includes)
 
 def create_compilation_context(ctx, headers = [], is_aspect = False):
     """
@@ -43,13 +51,6 @@ def create_compilation_context(ctx, headers = [], is_aspect = False):
 
     includes = None
     dependency_headers = depset([])
-
-    if hasattr(ctx.attr, "headers_db"):
-        dep_includes = ctx.attr.headers_db[HeadersInfo].includes
-        dep_headers = ctx.attr.headers_db[HeadersInfo].headers
-
-        includes = resolve_includes(ctx, dep_includes)
-        dependency_headers = dep_headers
 
     return struct(
         headers = all_headers,

@@ -1,8 +1,10 @@
-load("//cpp/private:target_rules.bzl", "header_map_impl", "module_impl", "shlib_impl")
-load("//cpp/private:toolchain.bzl", "bazel_toolchain_impl")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
 load("//cpp:aspects.bzl", "CompileCommandsInfo", "compile_commands_aspect")
 load("//cpp:providers.bzl", "CppModuleInfo")
+load("//cpp/private:target_rules.bzl", "module_impl", "shlib_impl")
+load("//cpp/private:toolchain.bzl", "bazel_toolchain_impl")
+load("//cpp/private/actions:compile.bzl", "cpp_compile")
+load("//cpp/private/actions:strip.bzl", "cpp_strip_objects")
 
 _toolchain_attrs = {
     "toolchain_prefix": attr.string(mandatory = True),
@@ -20,7 +22,6 @@ _shlib_attrs = {
     "deps": attr.label_list(providers = [CcInfo]),
     "strip_include_prefix": attr.string(),
     "include_prefix": attr.string(),
-    "headers_db": attr.label(),
     "includes": attr.string_list(),
     "lib_prefix": attr.string(mandatory = True),
     "lib_suffix": attr.string(mandatory = True),
@@ -47,39 +48,16 @@ cpp_toolchain_config = rule(
     provides = [CcToolchainConfigInfo],
 )
 
-_cpp_header_map = rule(
-    implementation = header_map_impl,
-    attrs = {
-        "srcs": attr.label_list(allow_files = True),
-        "hdrs": attr.label_list(allow_files = True),
-        "deps": attr.label_list(providers = [CcInfo]),
-        "strip_include_prefix": attr.string(),
-        "include_prefix": attr.string(),
-        "_headers_database": attr.label(
-            default = "//cpp/tools:headers_database",
-            executable = True,
-            cfg = "exec",
-        ),
-    },
-)
-
 _cpp_shared_library = rule(
     implementation = shlib_impl,
     attrs = _shlib_attrs,
     toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
     provides = [DefaultInfo, CcInfo],
+    subrules = [cpp_compile, cpp_strip_objects],
 )
 
 def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_prefix = "", include_prefix = "", **kwargs):
-    _cpp_header_map(
-        name = name + ".headers",
-        srcs = srcs,
-        hdrs = hdrs,
-        deps = deps,
-        strip_include_prefix = strip_include_prefix,
-        include_prefix = include_prefix,
-    )
     _cpp_shared_library(
         name = name,
         srcs = srcs,
@@ -87,7 +65,6 @@ def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_pref
         deps = deps,
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
-        headers_db = name + ".headers",
         lib_prefix = select({
             "@bazel_tools//src/conditions:windows": "",
             "//conditions:default": "lib",
@@ -182,6 +159,7 @@ cpp_module = rule(
     toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
     provides = [CppModuleInfo],
+    subrules = [cpp_compile, cpp_strip_objects],
 )
 
 def clang_format(name, deps):
