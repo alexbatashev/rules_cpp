@@ -209,3 +209,20 @@ def shlib_impl(ctx):
     cc_info = CcInfo(compilation_context = compilation_ctx, linking_context = linking_ctx)
 
     return default_provider, cc_info
+
+def module_impl(ctx):
+    """
+    Implements C++ rules for building C++ 20 modules
+
+    Return a tuple of providers
+
+    Args:
+        ctx: rule context
+
+    Returns:
+        A tuple of providers
+    """
+    toolchain = find_cpp_toolchain(ctx)
+
+    features = cc_common.configure_features(ctx = ctx, cc_toolchain = toolchain, requested_features = ctx.features + ["no_agressive_strip"], unsupported_features = ctx.disabled_features)
+    comp_ctx = create_compilation_context(ctx, [])

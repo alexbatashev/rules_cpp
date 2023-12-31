@@ -1,7 +1,14 @@
-load("//cpp/private:target_rules.bzl", "header_map_impl", "shlib_impl")
+load("//cpp/private:target_rules.bzl", "header_map_impl", "shlib_impl", "module_impl")
 load("//cpp/private:toolchain.bzl", "toolchain_impl")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
 load("//cpp:aspects.bzl", "CompileCommandsInfo", "compile_commands_aspect")
+
+CppModuleInfo = provider(
+    fields = {
+        "module_name": "name of the exported module",
+        "pcm": "file containing precompiled module",
+    }
+)
 
 _toolchain_attrs = {
     "toolchain_prefix": attr.string(mandatory = True),
@@ -29,6 +36,14 @@ _shlib_attrs = {
         executable = True,
         cfg = "exec",
     ),
+}
+
+_module_attrs = {
+    "srcs": attr.label_list(allow_files = True),
+    "deps": attr.label_list(prividers = [[CcInfo], [CppModuleInfo]]),
+    "interface": attr.label(allow_files = True),
+    "includes": attr.string_list(),
+    "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
 }
 
 cpp_toolchain_config = rule(
@@ -164,6 +179,12 @@ collect_cpp_files = rule(
             providers = [CcInfo],
         ),
     },
+)
+
+cpp_module = rule(
+    implementation = module_impl,
+    attrs = _module_attrs,
+    provides = [CppModuleInfo],
 )
 
 def clang_format(name, deps):
