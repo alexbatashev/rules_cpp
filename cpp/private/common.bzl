@@ -41,8 +41,8 @@ def create_compilation_context(ctx, headers = [], is_aspect = False):
         for src in ctx.rule.files.textual_hdrs:
             all_headers.append(src.path)
 
-    includes = []
-    dependency_headers = []
+    includes = None
+    dependency_headers = depset([])
 
     if hasattr(ctx.attr, "headers_db"):
         dep_includes = ctx.attr.headers_db[HeadersInfo].includes
@@ -58,10 +58,12 @@ def create_compilation_context(ctx, headers = [], is_aspect = False):
         includes = includes,
     )
 
-def get_compile_command_args(toolchain, source = None, output = None, features = None, include_directories = None, pic = True):
-    action = ACTION_NAMES.c_compile
-    if source.endswith(".cpp") or source.endswith(".hpp"):
-        action = ACTION_NAMES.cpp_compile
+def get_compile_command_args(toolchain, source = None, output = None, features = None, include_directories = None, pic = True, action_name = "", extra_vars = {}):
+    action = action_name
+    if action == "":
+        action = ACTION_NAMES.c_compile
+        if source.endswith(".cpp") or source.endswith(".hpp"):
+            action = ACTION_NAMES.cpp_compile
 
     variables = cc_common.create_compile_variables(
         cc_toolchain = toolchain,
@@ -70,6 +72,7 @@ def get_compile_command_args(toolchain, source = None, output = None, features =
         output_file = output,
         include_directories = include_directories,
         use_pic = pic,
+        variables_extension = extra_vars,
     )
 
     flags = cc_common.get_memory_inefficient_command_line(

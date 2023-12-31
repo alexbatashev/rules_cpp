@@ -2,10 +2,12 @@
 Contains rules implementations for building C++ targets
 """
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@rules_cpp//cpp/private:common.bzl", "HeadersInfo", "create_compilation_context", "get_compile_command_args", "resolve_linker_arguments")
+load("//cpp:providers.bzl", "CppModuleInfo")
+load("//cpp/private:common.bzl", "HeadersInfo", "create_compilation_context", "get_compile_command_args", "resolve_linker_arguments")
+load("//cpp/private:extra_actions.bzl", "EXTRA_ACTIONS")
 
 def header_map_impl(ctx):
     """
@@ -102,10 +104,12 @@ def _generate_unused_info(ctx, src):
 
     return unused
 
-def _compile_object_files(ctx, comp_ctx, toolchain, features):
+def _compile_object_files(ctx, comp_ctx, toolchain, features, additional_srcs = []):
     obj_files = []
 
-    for src in comp_ctx.sources:
+    all_sources = comp_ctx.sources + additional_srcs
+
+    for src in all_sources:
         outfile = ctx.actions.declare_file("_objs/" + src.basename + ".o")
         args = get_compile_command_args(
             toolchain,
@@ -115,16 +119,16 @@ def _compile_object_files(ctx, comp_ctx, toolchain, features):
             include_directories = comp_ctx.includes,
         )
 
-        unused = _generate_unused_info(ctx, src)
+        # unused = _generate_unused_info(ctx, src)
 
         ctx.actions.run(
             outputs = [outfile],
-            inputs = [src, unused] + comp_ctx.headers + comp_ctx.dependency_headers.to_list(),
+            inputs = [src] + comp_ctx.headers + comp_ctx.dependency_headers.to_list(),
             executable = toolchain.compiler_executable,
             arguments = args,
             mnemonic = "CppCompile",
             progress_message = "Compiling %{output}",
-            unused_inputs_list = unused,
+            # unused_inputs_list = unused,
         )
 
         obj_files.append(_strip_object_file(ctx.actions, toolchain, features, outfile))
@@ -209,3 +213,61 @@ def shlib_impl(ctx):
     cc_info = CcInfo(compilation_context = compilation_ctx, linking_context = linking_ctx)
 
     return default_provider, cc_info
+
+def module_impl(ctx):
+    """
+    Implements C++ rules for building C++ 20 modules
+
+    Return a tuple of providers
+
+    Args:
+        ctx: rule context
+
+    Returns:
+        A tuple of providers
+    """
+    toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
+
+    features = cc_common.configure_features(ctx = ctx, cc_toolchain = toolchain, requested_features = ctx.features + ["no_agressive_strip"], unsupported_features = ctx.disabled_features)
+    comp_ctx = create_compilation_context(ctx, [])
+
+    extra_modules = []
+    module_files = []
+    for dep in ctx.attr.deps:
+        if CppModuleInfo in dep:
+            module = dep[CppModuleInfo]
+            extra_modules.append({
+                "name": module.module_name,
+                "file": module.pcm.path,
+            })
+            module_files.append(module.pcm)
+
+    pcm = ctx.actions.declare_file("_pcm/" + ctx.attr.module_name + "-" + ctx.files.interface[0].basename[:-(len(ctx.files.interface[0].extension) + 1)] + ".pcm")
+
+    precompile_args = get_compile_command_args(
+        toolchain,
+        source = ctx.files.interface[0].path,
+        output = pcm.path,
+        features = features,
+        include_directories = None,
+        action_name = EXTRA_ACTIONS.cpp_module_precompile_interface,
+        extra_vars = {
+        },
+    )
+
+    ctx.actions.run(
+        outputs = [pcm],
+        mnemonic = "CppModulePrecompile",
+        inputs = ctx.files.interface + comp_ctx.headers + comp_ctx.dependency_headers.to_list(),
+        arguments = precompile_args,
+        executable = toolchain.compiler_executable,
+        progress_message = "Precompiling %{output}",
+    )
+
+    obj_files = _compile_object_files(ctx, comp_ctx, toolchain, features, [pcm])
+
+    return CppModuleInfo(
+        module_name = ctx.attr.module_name,
+        pcm = pcm,
+        objs = obj_files,
+    )

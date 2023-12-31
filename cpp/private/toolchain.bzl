@@ -1,3 +1,4 @@
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
     "action_config",
@@ -10,48 +11,17 @@ load(
     "variable_with_value",
     "with_feature_set",
 )
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
+load(
+    "//cpp/private:extra_actions.bzl",
+    "EXTRA_ACTIONS",
+    "all_c_compile_actions",
+    "all_compile_actions",
+    "all_cpp_compile_actions",
+    "all_link_actions",
+    "codegen_compile_actions",
+    "preprocessor_compile_actions",
+)
 load("//cpp/private:utils.bzl", "is_clang", "is_libcpp", "is_lld", "is_llvm")
-
-all_c_compile_actions = [
-    ACTION_NAMES.c_compile,
-    ACTION_NAMES.assemble,
-    ACTION_NAMES.preprocess_assemble,
-]
-
-all_cpp_compile_actions = [
-    ACTION_NAMES.cpp_compile,
-    ACTION_NAMES.linkstamp_compile,
-    ACTION_NAMES.cpp_header_parsing,
-    ACTION_NAMES.cpp_module_compile,
-    ACTION_NAMES.cpp_module_codegen,
-]
-
-all_compile_actions = all_c_compile_actions + all_cpp_compile_actions
-
-preprocessor_compile_actions = [
-    ACTION_NAMES.c_compile,
-    ACTION_NAMES.cpp_compile,
-    ACTION_NAMES.linkstamp_compile,
-    ACTION_NAMES.preprocess_assemble,
-    ACTION_NAMES.cpp_header_parsing,
-    ACTION_NAMES.cpp_module_compile,
-]
-
-codegen_compile_actions = [
-    ACTION_NAMES.c_compile,
-    ACTION_NAMES.cpp_compile,
-    ACTION_NAMES.linkstamp_compile,
-    ACTION_NAMES.assemble,
-    ACTION_NAMES.preprocess_assemble,
-    ACTION_NAMES.cpp_module_codegen,
-]
-
-all_link_actions = [
-    ACTION_NAMES.cpp_link_executable,
-    ACTION_NAMES.cpp_link_dynamic_library,
-    ACTION_NAMES.cpp_link_nodeps_dynamic_library,
-]
 
 def _get_tool_path(target, path):
     return path
@@ -228,7 +198,7 @@ def toolchain_impl(ctx):
         enabled = True,
         flag_sets = [
             flag_set(
-                actions = all_cpp_compile_actions + all_link_actions,
+                actions = all_cpp_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = ([
                     flag_group(
                         flags = std_compile_flags,
@@ -236,7 +206,7 @@ def toolchain_impl(ctx):
                 ]),
             ),
             flag_set(
-                actions = all_compile_actions,
+                actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = ([
                     flag_group(
                         flags = ["-isystem" + x for x in include_dirs] + [
@@ -269,7 +239,7 @@ def toolchain_impl(ctx):
                 ]),
             ),
             flag_set(
-                actions = preprocessor_compile_actions,
+                actions = preprocessor_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [
                     flag_group(
                         flags = [
@@ -501,7 +471,7 @@ def toolchain_impl(ctx):
         enabled = is_clang(compiler),
         flag_sets = [
             flag_set(
-                actions = all_compile_actions + all_link_actions,
+                actions = all_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [flag_group(flags = [
                     "--target=" + _get_target_triple(ctx.attr.target_cpu),
                 ])],
@@ -633,7 +603,7 @@ def toolchain_impl(ctx):
         provides = ["extra_warnings"],
         requires = [feature_set(features = ["clang"])],
         flag_sets = [flag_set(
-            actions = all_compile_actions,
+            actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
             flag_groups = [flag_group(flags = ["-Weverything"])],
         )],
     )
@@ -642,7 +612,7 @@ def toolchain_impl(ctx):
         name = "werror",
         flag_sets = [
             flag_set(
-                actions = all_compile_actions,
+                actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [flag_group(flags = [
                     "-Werror",
                 ])],
@@ -722,6 +692,22 @@ def toolchain_impl(ctx):
         ],
     )
 
+    use_module = feature(
+        name = "use_modules",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = all_cpp_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                flag_groups = [
+                    flag_group(
+                        iterate_over = "cpp_precompiled_modules",
+                        flags = ["-fmodule-file=%{cpp_precompiled_modules.name}=%{cpp_precompiled_modules.file}"],
+                    ),
+                ],
+            ),
+        ],
+    )
+
     static_stdlib_flags = []
     if is_clang(compiler):
         static_stdlib_flags = [
@@ -759,7 +745,7 @@ def toolchain_impl(ctx):
         name = "c++20",
         flag_sets = [
             flag_set(
-                actions = all_cpp_compile_actions,
+                actions = all_cpp_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [
                     flag_group(
                         flags = ["-std=c++20"],
@@ -773,7 +759,7 @@ def toolchain_impl(ctx):
         name = "openmp",
         flag_sets = [
             flag_set(
-                actions = all_compile_actions + all_link_actions,
+                actions = all_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [
                     flag_group(flags = ["-fopenmp"]),
                 ],
@@ -785,7 +771,7 @@ def toolchain_impl(ctx):
         name = "avx",
         enabled = ctx.attr.target_cpu == "k8" or ctx.attr.target_cpu == "darwin",
         flag_sets = [flag_set(
-            actions = all_compile_actions,
+            actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
             flag_groups = [flag_group(flags = ["-mavx"])],
         )],
     )
@@ -794,7 +780,7 @@ def toolchain_impl(ctx):
         name = "avx2",
         enabled = ctx.attr.target_cpu == "k8" or ctx.attr.target_cpu == "darwin",
         flag_sets = [flag_set(
-            actions = all_compile_actions,
+            actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
             flag_groups = [flag_group(flags = ["-mavx2"])],
         )],
     )
@@ -804,7 +790,7 @@ def toolchain_impl(ctx):
         enabled = True,
         flag_sets = [
             flag_set(
-                actions = all_compile_actions + all_link_actions,
+                actions = all_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [
                     flag_group(
                         flags = ["--sysroot=%{sysroot}"],
@@ -820,7 +806,7 @@ def toolchain_impl(ctx):
         enabled = True,
         flag_sets = [
             flag_set(
-                actions = all_compile_actions,
+                actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [
                     flag_group(
                         flags = ["%{user_compile_flags}"],
@@ -896,6 +882,22 @@ def toolchain_impl(ctx):
         ],
     )
 
+    module_interface_precompile = feature(
+        name = "module_interface_precompile",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                flag_groups = [
+                    flag_group(
+                        flags = ["-x", "c++-module", "%{cpp_module_interface_file}"],
+                        expand_if_available = "cpp_module_interface_file",
+                    ),
+                ],
+            ),
+        ],
+    )
+
     features = [
         feature(name = "clang", enabled = is_clang(compiler)),
         feature(name = "dbg"),
@@ -915,6 +917,7 @@ def toolchain_impl(ctx):
         default_optimization_flags,
         minimal_debug_info_flags,
         default_debug_info_flags,
+        module_interface_precompile,
         pic_feature,
         triple_feature,
         preserve_call_stacks,
