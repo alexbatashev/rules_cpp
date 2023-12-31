@@ -1,19 +1,43 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
+load("//cpp:providers.bzl", "CppModuleInfo")
 
 def collect_external_headers(deps):
     headers = []
 
     for dep in deps:
-        headers.extend(dep[CcInfo].compilation_context.direct_public_headers)
-        headers.extend(dep[CcInfo].compilation_context.direct_textual_headers)
+        if CcInfo in dep:
+            headers.extend(dep[CcInfo].compilation_context.direct_public_headers)
+            headers.extend(dep[CcInfo].compilation_context.direct_textual_headers)
 
     return headers
 
 def collect_external_includes(deps):
     includes = []
     for dep in deps:
-        includes.extend(dep[CcInfo].compilation_context.includes.to_list())
+        if CcInfo in dep:
+            includes.extend(dep[CcInfo].compilation_context.includes.to_list())
     return depset(includes)
+
+def collect_modules(deps):
+    modules = []
+
+    for dep in deps:
+        if CppModuleInfo in dep:
+            modules.append(struct(
+                name = dep[CppModuleInfo].module_name,
+                file = dep[CppModuleInfo].pcm,
+            ))
+
+    return modules
+
+def collect_module_objects(deps):
+    obj_files = []
+
+    for dep in deps:
+        if CppModuleInfo in dep:
+            obj_files.extend(dep[CppModuleInfo].objs)
+
+    return obj_files
 
 def create_compilation_context(ctx, headers = [], is_aspect = False):
     """
@@ -97,15 +121,16 @@ def resolve_dependency_libraries(ctx, prefer_static):
     always_link_libs = []
 
     for dep in ctx.attr.deps:
-        dep_libs = dep[CcInfo].linking_context.linker_inputs.to_list()
-        for input in dep_libs:
-            for item in input.libraries:
-                if not item.resolved_symlink_dynamic_library == None and (not prefer_static or item.pic_static_library == None):
-                    libs.append(item.resolved_symlink_dynamic_library)
-                elif not item.pic_static_library == None:
-                    libs.append(item.pic_static_library)
-                else:
-                    libs.append(item.static_library)
+        if CcInfo in dep:
+            dep_libs = dep[CcInfo].linking_context.linker_inputs.to_list()
+            for input in dep_libs:
+                for item in input.libraries:
+                    if not item.resolved_symlink_dynamic_library == None and (not prefer_static or item.pic_static_library == None):
+                        libs.append(item.resolved_symlink_dynamic_library)
+                    elif not item.pic_static_library == None:
+                        libs.append(item.pic_static_library)
+                    else:
+                        libs.append(item.static_library)
 
     return depset(libs), depset(always_link_libs)
 
@@ -138,9 +163,14 @@ def resolve_linker_arguments(ctx, toolchain, features, output_file, is_linking_d
         library_search_directories = depset(link_dirs),
     )
 
+    action_name = ACTION_NAMES.cpp_link_executable
+
+    if is_linking_dynamic_library:
+        action_name = ACTION_NAMES.cpp_link_dynamic_library
+
     link_flags_frozen = cc_common.get_memory_inefficient_command_line(
         feature_configuration = features,
-        action_name = ACTION_NAMES.cpp_link_dynamic_library,
+        action_name = action_name,
         variables = link_variables,
     )
 

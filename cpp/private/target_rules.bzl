@@ -4,7 +4,7 @@ Contains rules implementations for building C++ targets
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("//cpp:providers.bzl", "CppModuleInfo")
-load("//cpp/private:common.bzl", "collect_external_headers", "collect_external_includes", "get_compile_command_args", "resolve_linker_arguments")
+load("//cpp/private:common.bzl", "collect_external_headers", "collect_external_includes", "collect_module_objects", "collect_modules", "get_compile_command_args", "resolve_linker_arguments")
 load("//cpp/private:extra_actions.bzl", "EXTRA_ACTIONS")
 load("//cpp/private/actions:compile.bzl", "cpp_compile")
 load("//cpp/private/actions:strip.bzl", "cpp_strip_binary", "cpp_strip_objects")
@@ -49,9 +49,10 @@ def shlib_impl(ctx):
 
     all_headers = headers + collect_external_headers(ctx.attr.deps)
     includes = depset([ctx.bin_dir.path + "/_virtual_includes/" + ctx.attr.name] + ctx.attr.includes, transitive = [collect_external_includes(ctx.attr.deps)])
+    modules = collect_modules(ctx.attr.dep)
 
-    obj_files = cpp_compile(ctx.files.srcs, all_headers, includes, features, toolchain)
-    obj_files = cpp_strip_objects(obj_files, features, toolchain)
+    obj_files = cpp_compile(ctx.files.srcs, all_headers, includes, modules, features, toolchain)
+    obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps)
 
     shlib = ctx.actions.declare_file(ctx.attr.lib_prefix + ctx.attr.name + ctx.attr.lib_suffix)
     compile_output = shlib
@@ -73,7 +74,7 @@ def shlib_impl(ctx):
         inputs = depset(obj_files, transitive = [lib_inputs, toolchain.all_files]),
         executable = linker,
         arguments = link_flags,
-        mnemonic = "CppLink",
+        mnemonic = "CppLinkSharedLibrary",
         progress_message = "Compiling %{output}",
     )
 
@@ -116,23 +117,26 @@ def module_impl(ctx):
     Returns:
         A tuple of providers
     """
-    toolchain = ctx.attr._cc_toolchain[cc_common.CcToolchainInfo]
+    toolchain = find_cpp_toolchain(ctx)
+    print(toolchain)
 
     features = cc_common.configure_features(ctx = ctx, cc_toolchain = toolchain, requested_features = ctx.features + ["no_agressive_strip"], unsupported_features = ctx.disabled_features)
 
     headers = collect_external_headers(ctx.attr.deps)
     includes = depset(ctx.attr.includes, transitive = [collect_external_includes(ctx.attr.deps)])
+    modules = collect_modules(ctx.attr.deps)
 
-    extra_modules = []
+    extra_vars = {}
+
+    if len(modules) != 0:
+        extra_vars = {
+            "cpp_precompiled_modules": modules,
+        }
+
     module_files = []
-    for dep in ctx.attr.deps:
-        if CppModuleInfo in dep:
-            module = dep[CppModuleInfo]
-            extra_modules.append({
-                "name": module.module_name,
-                "file": module.pcm.path,
-            })
-            module_files.append(module.pcm)
+
+    for m in modules:
+        module_files.append(m.file)
 
     pcm = ctx.actions.declare_file("_pcm/" + ctx.attr.module_name + "-" + ctx.files.interface[0].basename[:-(len(ctx.files.interface[0].extension) + 1)] + ".pcm")
 
@@ -143,8 +147,7 @@ def module_impl(ctx):
         features = features,
         include_directories = includes,
         action_name = EXTRA_ACTIONS.cpp_module_precompile_interface,
-        extra_vars = {
-        },
+        extra_vars = extra_vars,
     )
 
     compiler = cc_common.get_tool_for_action(
@@ -155,17 +158,67 @@ def module_impl(ctx):
     ctx.actions.run(
         outputs = [pcm],
         mnemonic = "CppModulePrecompile",
-        inputs = depset(ctx.files.interface, transitive = [depset(headers), toolchain.all_files]),
+        inputs = depset(ctx.files.interface, transitive = [depset(headers), depset(module_files), toolchain.all_files]),
         arguments = precompile_args,
         executable = compiler,
         progress_message = "Precompiling %{output}",
     )
 
-    obj_files = cpp_compile(ctx.files.srcs + [pcm], headers, includes, features, toolchain)
-    obj_files = cpp_strip_objects(obj_files, features, toolchain)
+    obj_files = cpp_compile(ctx.files.srcs + [pcm], headers, includes, modules, features, toolchain)
+    obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps)
 
     return CppModuleInfo(
         module_name = ctx.attr.module_name,
         pcm = pcm,
         objs = obj_files,
     )
+
+def binary_impl(ctx):
+    """
+    Implements C++ rules for building C++ 20 modules
+
+    Return a tuple of providers
+
+    Args:
+        ctx: rule context
+
+    Returns:
+        A tuple of providers
+    """
+    toolchain = find_cpp_toolchain(ctx)
+
+    features = cc_common.configure_features(ctx = ctx, cc_toolchain = toolchain, requested_features = ctx.features + ["no_agressive_strip"], unsupported_features = ctx.disabled_features)
+
+    all_headers = collect_external_headers(ctx.attr.deps)
+    includes = collect_external_includes(ctx.attr.deps)
+
+    modules = collect_modules(ctx.attr.deps)
+
+    obj_files = cpp_compile(ctx.files.srcs, all_headers, includes, modules, features, toolchain)
+    obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps)
+
+    bin = ctx.actions.declare_file(ctx.attr.name + ctx.attr.bin_suffix)
+    compile_output = bin
+    if _has_agressive_strip(features, toolchain):
+        compile_output = ctx.actions.declare_file(ctx.attr.name + ".nonstripped" + ctx.attr.bin_suffix)
+
+    link_flags, lib_inputs = resolve_linker_arguments(ctx, toolchain, features, compile_output.path, False)
+
+    for obj in obj_files:
+        link_flags.append(obj.path)
+
+    ctx.actions.run(
+        outputs = [compile_output],
+        inputs = obj_files + lib_inputs.to_list(),
+        executable = toolchain.compiler_executable,
+        arguments = link_flags,
+        mnemonic = "CppLinkExecutable",
+        progress_message = "Linking %{output}",
+    )
+
+    if _has_agressive_strip(features, toolchain):
+        cpp_strip_binary(compile_output, compile_output, bin, toolchain)
+
+    default_provider = DefaultInfo(executable = bin)
+
+    return default_provider

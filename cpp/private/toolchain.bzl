@@ -166,8 +166,23 @@ def _get_clang_features(ctx):
                 actions = [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [
                     flag_group(
-                        flags = ["-x", "c++-module", "%{cpp_module_interface_file}"],
-                        expand_if_available = "cpp_module_interface_file",
+                        flags = ["-x", "c++-module"],
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    use_modules = feature(
+        name = "use_modules",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = all_cpp_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                flag_groups = [
+                    flag_group(
+                        iterate_over = "cpp_precompiled_modules",
+                        flags = ["-fmodule-file=%{cpp_precompiled_modules.name}=%{cpp_precompiled_modules.file}"],
                     ),
                 ],
             ),
@@ -195,6 +210,7 @@ def _get_clang_features(ctx):
         stdlib_feature,
         module_interface_precompile_feature,
         lld_feature,
+        use_modules,
     ]
 
 def _get_action_configs(compiler, strip, archiver):

@@ -1,4 +1,4 @@
-load("@rules_cpp//cpp:rules.bzl", "clang_format", "cpp_module", "cpp_shared_library")
+load("@rules_cpp//cpp:rules.bzl", "clang_format", "cpp_binary", "cpp_module", "cpp_shared_library")
 
 cpp_module(
     name = "test",
@@ -31,6 +31,12 @@ cc_binary(
     name = "main",
     srcs = ["src/main.cpp"],
     deps = [":foo"],
+)
+
+cpp_binary(
+    name = "module_user",
+    srcs = ["module/module_user.cpp"],
+    deps = [":test"],
 )
 
 clang_format(
