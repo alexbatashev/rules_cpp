@@ -3,7 +3,7 @@ load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 CPP_MODULE_INTEFACE = "cpp-module-interface"
 
 EXTRA_ACTIONS = struct(
-  cpp_module_precompile_interface = CPP_MODULE_INTEFACE,
+    cpp_module_precompile_interface = CPP_MODULE_INTEFACE,
 )
 
 all_c_compile_actions = [

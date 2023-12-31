@@ -1,4 +1,10 @@
-load("@rules_cpp//cpp:rules.bzl", "clang_format", "cpp_shared_library")
+load("@rules_cpp//cpp:rules.bzl", "clang_format", "cpp_module", "cpp_shared_library")
+
+cpp_module(
+    name = "test",
+    interface = "module/interface.cppm",
+    module_name = "test",
+)
 
 cc_library(
     name = "bar",
