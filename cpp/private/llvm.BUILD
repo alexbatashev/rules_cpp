@@ -85,12 +85,11 @@ tool(
   data = [
     ":clang-files",
     ":binutils",
-    ":lld",
     ":openmp",
     ":lld",
     ":libc++",
     ":static_libc++",
-  ]
+  ],
   visibility = ["//visibility:public"],
 )
 
