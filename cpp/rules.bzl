@@ -89,11 +89,24 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
         ],
     )
 
+    PLATFORMS = [
+        struct(
+            os = "@platforms//os:linux",
+            target_cpu = "@platforms//cpu:x86_64",
+        ),
+        struct(
+            os = "@platforms//os:linux",
+            target_cpu = "@platforms//cpu:aarch64",
+        ),
+    ]
+
     toolchains = {}
 
-    for cpu in target_cpus:
+    for p in PLATFORMS:
+        cpu = Label(p.target_cpu).name
+        os = Label(p.os).name
         cpp_toolchain_config(
-            name = name + "-" + cpu + "-config",
+            name = name + "-" + os + "-" + cpu + "-config",
             toolchain_prefix = name,
             compiler = compiler,
             linker = linker,
@@ -104,7 +117,7 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
         )
 
         native.cc_toolchain(
-            name = name + "-" + cpu + "-toolchain",
+            name = name + "-" + os + "-" + cpu + "-toolchain",
             all_files = name + "-files",
             ar_files = name + "-files",
             as_files = name + "-files",
@@ -115,16 +128,23 @@ def cpp_toolchain(name, compiler, linker, stdlib, static_stdlib, binutils, targe
             strip_files = name + "-files",
             static_runtime_lib = static_stdlib,
             supports_param_files = 1,
-            toolchain_config = ":" + name + "-" + cpu + "-config",
-            toolchain_identifier = name + "-" + cpu + "-toolchain",
+            toolchain_config = ":" + name + "-" + os + "-" + cpu + "-config",
+            toolchain_identifier = name + "-" + os + "-" + cpu + "-toolchain",
         )
 
-        toolchains[cpu] = name + "-" + cpu + "-toolchain"
-
-    native.cc_toolchain_suite(
-        name = name,
-        toolchains = toolchains,
-    )
+        native.toolchain(
+            name = name + "-" + os + "-" + cpu,
+            exec_compatible_with = [
+                "@platforms//os:linux",
+                "@platforms//cpu:x86_64",
+            ],
+            target_compatible_with = [
+                p.os,
+                p.target_cpu,
+            ],
+            toolchain = ":" + name + "-" + os + "-" + cpu + "-toolchain",
+            toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+        )
 
 def _collect_cpp_files_impl(ctx):
     sources = []

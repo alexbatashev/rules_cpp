@@ -142,16 +142,16 @@ def _get_link_paths(stdlib, compiler):
     return link_dirs
 
 def _get_exec_rpath_prefix(ctx):
-    if ctx.attr.target_cpu in ["aarch64", "k8"]:
+    if ctx.attr.target_cpu in ["aarch64", "k8", "x86_64"]:
         return "$EXECROOT/"
-    elif ctx.attr.target_cpu in ["darwin", "darwin_arm64"]:
+    elif ctx.attr.target_cpu in ["darwin", "darwin_arm64", "darwin_x86_64"]:
         return "@loader_path/../../../"
     return None
 
 def _get_rpath_prefix(ctx):
-    if ctx.attr.target_cpu in ["aarch64", "k8"]:
+    if ctx.attr.target_cpu in ["aarch64", "k8", "x86_64"]:
         return "$ORIGIN/"
-    elif ctx.attr.target_cpu in ["darwin", "darwin_arm64"]:
+    elif ctx.attr.target_cpu in ["darwin", "darwin_arm64", "darwin_x86_64"]:
         return "@loader_path/"
     return None
 
@@ -346,7 +346,7 @@ def bazel_toolchain_impl(ctx):
 
     features = _get_default_features(ctx, compiler, std_compile_flags, include_dirs, link_dirs)
     if is_clang(compiler):
-        features += _get_clang_features()
+        features += _get_clang_features(ctx)
 
     if ctx.attr.target_cpu in ["darwin", "darwin_arm64"]:
         features.append(darwin_default_feature)
@@ -356,7 +356,7 @@ def bazel_toolchain_impl(ctx):
     sysroot = None
 
     # FIXME: completely seal the toolchain?
-    include_dirs.append("/usr/include")
+    include_dirs.append("/usr/include/asdfasdfasdf")
     include_dirs.append("/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include")
 
     return cc_common.create_cc_toolchain_config_info(
