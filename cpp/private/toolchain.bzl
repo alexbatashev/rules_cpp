@@ -43,9 +43,23 @@ load(
 load("//cpp/private:utils.bzl", "is_clang", "is_libcpp", "is_lld", "is_llvm")
 load("//cpp/private:tool.bzl", "ToolInfo")
 
-def _get_include_paths(_stdlib, _compiler):
-    # FIXME support different combinations
-    return []
+def _get_include_paths(stdlib, compiler):
+    include_dirs = []
+    stdlib_base = stdlib.label.workspace_root + "/"
+    compiler_base = compiler.dirname + "/../"
+    if is_libcpp(stdlib):
+        include_dirs += [
+            stdlib_base + "include/c++/v1",
+            stdlib_base + "include/x86_64-unknown-linux-gnu",
+            stdlib_base + "include/x86_64-unknown-linux-gnu/c++/v1",
+        ]
+
+    if is_clang(compiler):
+        include_dirs.append(
+            compiler_base + "lib/clang/17/include",
+        )
+
+    return include_dirs
 
 def _get_link_paths(stdlib, compiler):
     stdlib_base = stdlib.label.workspace_root + "/"
@@ -159,22 +173,6 @@ def _get_clang_features(ctx):
         ],
     )
 
-    clang_default_flags = feature(
-        name = "clang_default_flags",
-        enabled = True,
-        flag_sets = [
-            flag_set(
-                actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
-                flag_groups = [
-                    flag_group(
-                        expand_if_available = "clang_config_file",
-                        flags = ["--config=%{clang_config_file}"],
-                    ),
-                ],
-            ),
-        ],
-    )
-
     use_modules = feature(
         name = "c++20_modules",
         flag_sets = [
@@ -222,7 +220,6 @@ def _get_clang_features(ctx):
         module_interface_precompile_feature,
         lld_feature,
         use_modules,
-        clang_default_flags,
     ]
 
 def _get_action_configs(compiler, strip, archiver):
