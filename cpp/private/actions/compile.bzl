@@ -9,8 +9,23 @@ load("//cpp/private:extra_actions.bzl", "EXTRA_ACTIONS")
 def _cpp_compile_impl(ctx, sources, headers, includes, modules, features, toolchain, module_srcs = []):
     obj_files = []
 
+    compiler = cc_common.get_tool_for_action(
+        feature_configuration = features,
+        action_name = ACTION_NAMES.cpp_compile,
+    )
+
+    config = ctx.actions.declare_file(ctx.label.name + ".config")
+
+    ctx.actions.run_shell(
+        outputs = [config],
+        inputs = toolchain.all_files,
+        arguments = [config.path],
+        command = "echo \"-resource-dir=$({compiler} -print-resource-dir)\" > $1 || touch $1".format(compiler = compiler),
+    )
+
     extra_vars = {
         "cpp_precompiled_modules": [],
+        "clang_config_file": config.path,
     }
 
     module_files = []
@@ -23,14 +38,15 @@ def _cpp_compile_impl(ctx, sources, headers, includes, modules, features, toolch
 
     extra_vars["cpp_precompiled_modules"] = module_vars
 
+    compiler = cc_common.get_tool_for_action(
+        feature_configuration = features,
+        action_name = ACTION_NAMES.cpp_compile,
+    )
+
     for src in sources:
         action_name = ACTION_NAMES.cpp_compile
         if src.extension in ["pcm"]:
             action_name = EXTRA_ACTIONS.cpp_module_compile
-        compiler = cc_common.get_tool_for_action(
-            feature_configuration = features,
-            action_name = action_name,
-        )
 
         outfile = ctx.actions.declare_file("_objs/" + ctx.label.name + "/" + src.basename + ".o")
         args = get_compile_command_args(
@@ -40,11 +56,12 @@ def _cpp_compile_impl(ctx, sources, headers, includes, modules, features, toolch
             features = features,
             include_directories = includes,
             extra_vars = extra_vars,
+            action_name = action_name,
         )
 
         ctx.actions.run(
             outputs = [outfile],
-            inputs = depset([src], transitive = [depset(headers), depset(module_files), toolchain.all_files, depset(module_srcs)]),
+            inputs = depset([src, config], transitive = [depset(headers), depset(module_files), toolchain.all_files, depset(module_srcs)]),
             executable = compiler,
             arguments = args,
             mnemonic = "CppCompile",

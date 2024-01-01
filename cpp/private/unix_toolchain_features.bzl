@@ -13,6 +13,7 @@ load(
     "EXTRA_ACTIONS",
     "all_c_compile_actions",
     "all_compile_actions",
+    "all_cpp_classic_compile_actions",
     "all_cpp_compile_actions",
     "all_link_actions",
     "codegen_compile_actions",
@@ -25,7 +26,7 @@ def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_pre
         enabled = True,
         flag_sets = [
             flag_set(
-                actions = all_cpp_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                actions = all_cpp_classic_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = ([
                     flag_group(
                         flags = std_compile_flags,
@@ -33,13 +34,7 @@ def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_pre
                 ]),
             ),
             flag_set(
-                actions = all_c_compile_actions + [
-                    ACTION_NAMES.cpp_compile,
-                    ACTION_NAMES.linkstamp_compile,
-                    ACTION_NAMES.cpp_header_parsing,
-                    ACTION_NAMES.cpp_module_compile,
-                    ACTION_NAMES.cpp_module_codegen,
-                ],
+                actions = all_c_compile_actions + all_cpp_classic_compile_actions,
                 flag_groups = [
                     flag_group(
                         flags = ["-isystem" + x for x in include_dirs] + [
