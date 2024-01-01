@@ -165,7 +165,7 @@ def module_impl(ctx):
     )
 
     obj_files = cpp_compile(ctx.files.srcs + [pcm], headers, includes, modules, features, toolchain, module_srcs = ctx.files.interface)
-    obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps)
+    obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps + ctx.attr.partitions)
 
     return CppModuleInfo(
         module_name = ctx.attr.module_name,
