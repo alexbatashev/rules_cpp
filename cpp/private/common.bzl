@@ -16,6 +16,8 @@ def collect_external_includes(deps):
     for dep in deps:
         if CcInfo in dep:
             includes.extend(dep[CcInfo].compilation_context.includes.to_list())
+            includes.extend(dep[CcInfo].compilation_context.external_includes.to_list())
+            includes.extend(dep[CcInfo].compilation_context.system_includes.to_list())
     return depset(includes)
 
 def collect_modules(deps):
