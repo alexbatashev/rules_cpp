@@ -49,7 +49,7 @@ def shlib_impl(ctx):
 
     all_headers = headers + collect_external_headers(ctx.attr.deps)
     includes = depset([ctx.bin_dir.path + "/_virtual_includes/" + ctx.attr.name] + ctx.attr.includes, transitive = [collect_external_includes(ctx.attr.deps)])
-    modules = collect_modules(ctx.attr.dep)
+    modules = collect_modules(ctx.attr.deps)
 
     obj_files = cpp_compile(ctx.files.srcs, all_headers, includes, modules, features, toolchain)
     obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps)
@@ -118,7 +118,6 @@ def module_impl(ctx):
         A tuple of providers
     """
     toolchain = find_cpp_toolchain(ctx)
-    print(toolchain)
 
     features = cc_common.configure_features(ctx = ctx, cc_toolchain = toolchain, requested_features = ctx.features + ["no_agressive_strip"], unsupported_features = ctx.disabled_features)
 
@@ -126,7 +125,9 @@ def module_impl(ctx):
     includes = depset(ctx.attr.includes, transitive = [collect_external_includes(ctx.attr.deps)])
     modules = collect_modules(ctx.attr.deps)
 
-    extra_vars = {}
+    extra_vars = {
+        "cpp_precompiled_modules": [],
+    }
 
     if len(modules) != 0:
         extra_vars = {
@@ -136,7 +137,8 @@ def module_impl(ctx):
     module_files = []
 
     for m in modules:
-        module_files.append(m.file)
+        print(m)
+        module_files.append(m["file"])
 
     pcm = ctx.actions.declare_file("_pcm/" + ctx.attr.module_name + "-" + ctx.files.interface[0].basename[:-(len(ctx.files.interface[0].extension) + 1)] + ".pcm")
 

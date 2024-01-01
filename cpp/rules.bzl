@@ -28,7 +28,7 @@ _shlib_attrs = {
     "includes": attr.string_list(),
     "lib_prefix": attr.string(mandatory = True),
     "lib_suffix": attr.string(mandatory = True),
-    # "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+    "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
     "_unused_headers": attr.label(
         default = "//cpp/tools:unused_headers",
         executable = True,

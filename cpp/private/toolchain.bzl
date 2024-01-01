@@ -182,7 +182,8 @@ def _get_clang_features(ctx):
                 flag_groups = [
                     flag_group(
                         iterate_over = "cpp_precompiled_modules",
-                        flags = ["-fmodule-file=%{cpp_precompiled_modules.name}=%{cpp_precompiled_modules.file}"],
+                        expand_if_available = "cpp_precompiled_modules",
+                        flags = ["-fmodule-file=%{cpp_precompiled_modules}"],
                     ),
                 ],
             ),

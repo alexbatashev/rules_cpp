@@ -23,10 +23,10 @@ def collect_modules(deps):
 
     for dep in deps:
         if CppModuleInfo in dep:
-            modules.append(struct(
-                name = dep[CppModuleInfo].module_name,
-                file = dep[CppModuleInfo].pcm,
-            ))
+            modules.append({
+                "name": dep[CppModuleInfo].module_name,
+                "file": dep[CppModuleInfo].pcm,
+            })
 
     return modules
 
@@ -83,12 +83,17 @@ def create_compilation_context(ctx, headers = [], is_aspect = False):
         includes = includes,
     )
 
-def get_compile_command_args(toolchain, source = None, output = None, features = None, include_directories = None, pic = True, action_name = "", extra_vars = {}):
+def get_compile_command_args(toolchain, source = None, output = None, features = None, include_directories = None, pic = True, action_name = "", extra_vars = None):
     action = action_name
     if action == "":
         action = ACTION_NAMES.c_compile
         if source.endswith(".cpp") or source.endswith(".hpp"):
             action = ACTION_NAMES.cpp_compile
+
+    if extra_vars == None:
+        extra_vars = {
+            "cpp_precompiled_modules": [],
+        }
 
     variables = cc_common.create_compile_variables(
         cc_toolchain = toolchain,
