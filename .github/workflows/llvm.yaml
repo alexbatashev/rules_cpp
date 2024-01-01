@@ -164,5 +164,3 @@ jobs:
             files: |
               linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
               macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64.tar.zst
-
-
