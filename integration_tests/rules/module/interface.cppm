@@ -1,9 +1,9 @@
 module;
 
-export module test;
-
 #include <iostream>
 
-void hello() {
+export module test;
+
+export void hello() {
     std::cout << "Hello from module\n";
 }

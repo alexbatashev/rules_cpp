@@ -166,8 +166,31 @@ def _get_clang_features(ctx):
                 actions = [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [
                     flag_group(
-                        flags = ["-x", "c++-module", "%{cpp_module_interface_file}"],
-                        expand_if_available = "cpp_module_interface_file",
+                        flags = ["-x", "c++-module"],
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    use_modules = feature(
+        name = "c++20_modules",
+        flag_sets = [
+            flag_set(
+                actions = all_cpp_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                flag_groups = [
+                    flag_group(
+                        iterate_over = "cpp_precompiled_modules",
+                        expand_if_available = "cpp_precompiled_modules",
+                        flags = ["-fmodule-file=%{cpp_precompiled_modules}"],
+                    ),
+                ],
+            ),
+            flag_set(
+                actions = [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                flag_groups = [
+                    flag_group(
+                        flags = ["--precompile"],
                     ),
                 ],
             ),
@@ -195,12 +218,13 @@ def _get_clang_features(ctx):
         stdlib_feature,
         module_interface_precompile_feature,
         lld_feature,
+        use_modules,
     ]
 
 def _get_action_configs(compiler, strip, archiver):
     return [
         action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = compiler)])
-        for name in all_c_compile_actions + all_cpp_compile_actions + all_link_actions
+        for name in all_c_compile_actions + all_cpp_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface]
     ] + [
         action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = archiver)])
         for name in [ACTION_NAMES.cpp_link_static_library]

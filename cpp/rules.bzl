@@ -1,10 +1,10 @@
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
 load("//cpp:aspects.bzl", "CompileCommandsInfo", "compile_commands_aspect")
 load("//cpp:providers.bzl", "CppModuleInfo")
-load("//cpp/private:target_rules.bzl", "module_impl", "shlib_impl")
+load("//cpp/private:target_rules.bzl", "binary_impl", "module_impl", "shlib_impl")
 load("//cpp/private:toolchain.bzl", "bazel_toolchain_impl")
 load("//cpp/private/actions:compile.bzl", "cpp_compile")
-load("//cpp/private/actions:strip.bzl", "cpp_strip_objects")
+load("//cpp/private/actions:strip.bzl", "cpp_strip_binary", "cpp_strip_objects")
 
 _toolchain_attrs = {
     "toolchain_prefix": attr.string(mandatory = True),
@@ -36,6 +36,14 @@ _shlib_attrs = {
     ),
 }
 
+_bin_attrs = {
+    "srcs": attr.label_list(allow_files = True),
+    "deps": attr.label_list(providers = [[CcInfo], [CppModuleInfo]]),
+    "includes": attr.string_list(),
+    "bin_suffix": attr.string(mandatory = True),
+    "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+}
+
 _module_attrs = {
     "srcs": attr.label_list(allow_files = True),
     "deps": attr.label_list(providers = [[CcInfo], [CppModuleInfo]]),
@@ -57,7 +65,16 @@ _cpp_shared_library = rule(
     toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
     provides = [DefaultInfo, CcInfo],
-    subrules = [cpp_compile, cpp_strip_objects],
+    subrules = [cpp_compile, cpp_strip_objects, cpp_strip_binary],
+)
+
+_cpp_binary = rule(
+    implementation = binary_impl,
+    attrs = _bin_attrs,
+    toolchains = use_cpp_toolchain(),
+    fragments = ["cpp"],
+    provides = [DefaultInfo],
+    subrules = [cpp_compile, cpp_strip_objects, cpp_strip_binary],
 )
 
 def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_prefix = "", include_prefix = "", **kwargs):
@@ -76,6 +93,16 @@ def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_pref
             "@bazel_tools//src/conditions:windows": ".dll",
             "@bazel_tools//src/conditions:darwin": ".dylib",
             "//conditions:default": ".so",
+        }),
+        **kwargs
+    )
+
+def cpp_binary(name, **kwargs):
+    _cpp_binary(
+        name = name,
+        bin_suffix = select({
+            "@bazel_tools//src/conditions:windows": ".exe",
+            "//conditions:default": "",
         }),
         **kwargs
     )
