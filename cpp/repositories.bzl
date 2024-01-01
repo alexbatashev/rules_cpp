@@ -6,20 +6,20 @@ load(
 _llvm_x64_linux = {
     "17.0.6": {
         "urls": [
-            "https://github.com/alexbatashev/rules_cpp/releases/download/llvmorg-17.0.6-4de414fea4aa1fef231c037044df08d7138fa14e/llvmorg-17.0.6-linux-x86_64.tar.zst",
+            "https://github.com/alexbatashev/rules_cpp/releases/download/llvmorg-17.0.6-31a6a2ac5144effba2c8bd42950c994ba54230ae/llvmorg-17.0.6-linux-x86_64.tar.zst",
         ],
         "strip_prefix": "llvmorg-17.0.6-linux-x86_64",
-        "sha256": "54bf5ac76cf79491282a2318999d4bfc648d5b7da7341294c271c1c43151e2c4",
+        "sha256": "a9f735bf262c2fd4805e3f66ee58ed5a7725978da7294d6654809a964f92ac82",
     },
 }
 
 _llvm_x64_darwin = {
     "17.0.6": {
         "urls": [
-            "https://github.com/alexbatashev/rules_cpp/releases/download/llvmorg-17.0.6-4de414fea4aa1fef231c037044df08d7138fa14e/llvmorg-17.0.6-macos-x86_64.tar.zst",
+            "https://github.com/alexbatashev/rules_cpp/releases/download/llvmorg-17.0.6-31a6a2ac5144effba2c8bd42950c994ba54230ae/llvmorg-17.0.6-macos-x86_64.tar.zst",
         ],
         "strip_prefix": "llvmorg-17.0.6-macos-x86_64",
-        "sha256": "6f3ac3ef9d69b43fc93d01caef3f3fb2e9a5b742da775442970ad45a28ec0e50",
+        "sha256": "f1d43ad89e6bcd5afe9cdbdd34e66f3301cccd00e82d3ae722092e1e04486902",
     },
 }
 
