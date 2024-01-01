@@ -21,6 +21,8 @@ def _cpp_compile_impl(ctx, sources, headers, includes, modules, features, toolch
         module_files.append(m["source"])
         module_vars.append("{name}={file}".format(name = m["name"], file = m["file"].path))
 
+    print(module_files)
+
     extra_vars["cpp_precompiled_modules"] = module_vars
 
     for src in sources:
