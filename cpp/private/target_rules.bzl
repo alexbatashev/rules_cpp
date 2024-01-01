@@ -171,6 +171,7 @@ def module_impl(ctx):
         module_name = ctx.attr.module_name,
         pcm = pcm,
         objs = obj_files,
+        interface_source = ctx.files.interface[0],
         partitions = depset(ctx.attr.partitions),
     )
 

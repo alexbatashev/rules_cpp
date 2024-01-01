@@ -28,11 +28,13 @@ def collect_modules(deps):
             modules.append({
                 "name": dep[CppModuleInfo].module_name,
                 "file": dep[CppModuleInfo].pcm,
+                "source": dep[CppModuleInfo].interface_source,
             })
             for part in dep[CppModuleInfo].partitions.to_list():
                 modules.append({
                     "name": part[CppModuleInfo].module_name,
                     "file": part[CppModuleInfo].pcm,
+                    "source": dep[CppModuleInfo].interface_source,
                 })
 
     return modules
