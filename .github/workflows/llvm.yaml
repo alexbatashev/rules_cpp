@@ -136,8 +136,8 @@ jobs:
           ninja llvm-dwp
           ninja install-pstl
           cp ./bin/llvm-dwp ./install/${{inputs.llvm_tag}}-macos-x86_64/bin
-          cp ./lib/libclang-*.dylib ./install/${{inputs.llvm_tag}}-macos-x86_64/lib || true
-          cp ./lib/libLLVM-*.dylib ./install/${{inputs.llvm_tag}}-macos-x86_64/lib || true
+          cp ./lib/libclang*.dylib ./install/${{inputs.llvm_tag}}-macos-x86_64/lib || true
+          cp ./lib/libLLVM*.dylib ./install/${{inputs.llvm_tag}}-macos-x86_64/lib || true
 
           cd install
 
