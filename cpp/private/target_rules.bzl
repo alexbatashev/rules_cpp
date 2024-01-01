@@ -138,7 +138,7 @@ def module_impl(ctx):
 
     extra_vars["cpp_precompiled_modules"] = module_vars
 
-    pcm = ctx.actions.declare_file("_pcm/" + ctx.attr.module_name + "-" + ctx.files.interface[0].basename[:-(len(ctx.files.interface[0].extension) + 1)] + ".pcm")
+    pcm = ctx.actions.declare_file("_pcm/" + ctx.attr.name + "/" + ctx.attr.module_name + "-" + ctx.files.interface[0].basename[:-(len(ctx.files.interface[0].extension) + 1)] + ".pcm")
 
     precompile_args = get_compile_command_args(
         toolchain,
@@ -171,6 +171,7 @@ def module_impl(ctx):
         module_name = ctx.attr.module_name,
         pcm = pcm,
         objs = obj_files,
+        interface_source = ctx.files.interface[0],
         partitions = depset(ctx.attr.partitions),
     )
 

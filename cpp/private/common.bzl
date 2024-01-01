@@ -6,8 +6,7 @@ def collect_external_headers(deps):
 
     for dep in deps:
         if CcInfo in dep:
-            headers.extend(dep[CcInfo].compilation_context.direct_public_headers)
-            headers.extend(dep[CcInfo].compilation_context.direct_textual_headers)
+            headers.extend(dep[CcInfo].compilation_context.headers.to_list())
 
     return headers
 
@@ -16,6 +15,9 @@ def collect_external_includes(deps):
     for dep in deps:
         if CcInfo in dep:
             includes.extend(dep[CcInfo].compilation_context.includes.to_list())
+            includes.extend(dep[CcInfo].compilation_context.external_includes.to_list())
+            includes.extend(dep[CcInfo].compilation_context.system_includes.to_list())
+            includes.extend(dep[CcInfo].compilation_context.quote_includes.to_list())
     return depset(includes)
 
 def collect_modules(deps):
@@ -26,11 +28,13 @@ def collect_modules(deps):
             modules.append({
                 "name": dep[CppModuleInfo].module_name,
                 "file": dep[CppModuleInfo].pcm,
+                "source": dep[CppModuleInfo].interface_source,
             })
             for part in dep[CppModuleInfo].partitions.to_list():
                 modules.append({
                     "name": part[CppModuleInfo].module_name,
                     "file": part[CppModuleInfo].pcm,
+                    "source": part[CppModuleInfo].interface_source,
                 })
 
     return modules
