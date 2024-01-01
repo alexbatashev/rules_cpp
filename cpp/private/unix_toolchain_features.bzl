@@ -11,6 +11,7 @@ load(
 load(
     "//cpp/private:extra_actions.bzl",
     "EXTRA_ACTIONS",
+    "all_c_compile_actions",
     "all_compile_actions",
     "all_cpp_compile_actions",
     "all_link_actions",
@@ -32,8 +33,14 @@ def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_pre
                 ]),
             ),
             flag_set(
-                actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
-                flag_groups = ([
+                actions = all_c_compile_actions + [
+                    ACTION_NAMES.cpp_compile,
+                    ACTION_NAMES.linkstamp_compile,
+                    ACTION_NAMES.cpp_header_parsing,
+                    ACTION_NAMES.cpp_module_compile,
+                    ACTION_NAMES.cpp_module_codegen,
+                ],
+                flag_groups = [
                     flag_group(
                         flags = ["-isystem" + x for x in include_dirs] + [
                             "--system-header-prefix=external/",
@@ -42,9 +49,16 @@ def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_pre
                             # "-fno-canonical-system-headers",
                             "-isystem",
                             "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include",
-                            # Compile actions shouldn't link anything.
-                            "-c",
                         ],
+                    ),
+                ],
+            ),
+            flag_set(
+                actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                flag_groups = ([
+                    flag_group(
+                        # Compile actions shouldn't link anything.
+                        flags = ["-c"],
                     ),
                     flag_group(
                         expand_if_available = "output_assembly_file",
@@ -109,7 +123,7 @@ def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_pre
                 actions = all_link_actions,
                 flag_groups = [
                     flag_group(
-                        flags = ["-nostdlib"],
+                        flags = ["-nodefaultlibs"],
                     ),
                     flag_group(
                         flags = ["-Wl,-L" + d for d in link_dirs],
@@ -422,6 +436,7 @@ preserve_call_stacks = feature(
 
 cpp20_feature = feature(
     name = "c++20",
+    implies = ["c++20_modules"],
     flag_sets = [
         flag_set(
             actions = all_cpp_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],

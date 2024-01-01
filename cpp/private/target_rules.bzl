@@ -129,16 +129,14 @@ def module_impl(ctx):
         "cpp_precompiled_modules": [],
     }
 
-    if len(modules) != 0:
-        extra_vars = {
-            "cpp_precompiled_modules": modules,
-        }
-
     module_files = []
+    module_vars = []
 
     for m in modules:
-        print(m)
         module_files.append(m["file"])
+        module_vars.append("{name}={file}".format(name = m["name"], file = m["file"].path))
+
+    extra_vars["cpp_precompiled_modules"] = module_vars
 
     pcm = ctx.actions.declare_file("_pcm/" + ctx.attr.module_name + "-" + ctx.files.interface[0].basename[:-(len(ctx.files.interface[0].extension) + 1)] + ".pcm")
 
@@ -166,7 +164,7 @@ def module_impl(ctx):
         progress_message = "Precompiling %{output}",
     )
 
-    obj_files = cpp_compile(ctx.files.srcs + [pcm], headers, includes, modules, features, toolchain)
+    obj_files = cpp_compile(ctx.files.srcs + [pcm], headers, includes, modules, features, toolchain, module_srcs = ctx.files.interface)
     obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps)
 
     return CppModuleInfo(
@@ -209,10 +207,15 @@ def binary_impl(ctx):
     for obj in obj_files:
         link_flags.append(obj.path)
 
+    linker = cc_common.get_tool_for_action(
+        feature_configuration = features,
+        action_name = ACTION_NAMES.cpp_link_executable,
+    )
+
     ctx.actions.run(
         outputs = [compile_output],
-        inputs = obj_files + lib_inputs.to_list(),
-        executable = toolchain.compiler_executable,
+        inputs = depset(obj_files, transitive = [lib_inputs, toolchain.all_files]),
+        executable = linker,
         arguments = link_flags,
         mnemonic = "CppLinkExecutable",
         progress_message = "Linking %{output}",
