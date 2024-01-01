@@ -34,7 +34,7 @@ def collect_modules(deps):
                 modules.append({
                     "name": part[CppModuleInfo].module_name,
                     "file": part[CppModuleInfo].pcm,
-                    "source": dep[CppModuleInfo].interface_source,
+                    "source": part[CppModuleInfo].interface_source,
                 })
 
     return modules
