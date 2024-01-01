@@ -46,7 +46,7 @@ load("//cpp/private:tool.bzl", "ToolInfo")
 def _get_include_paths(stdlib, compiler):
     include_dirs = []
     stdlib_base = stdlib.label.workspace_root + "/"
-    compiler_base = compiler.root.path + "/../"
+    compiler_base = compiler.dirname + "/../"
     if is_libcpp(stdlib):
         include_dirs += [
             stdlib_base + "include/c++/v1",
