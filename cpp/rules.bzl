@@ -74,7 +74,26 @@ _cpp_binary = rule(
     toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
     provides = [DefaultInfo],
-    subrules = [cpp_compile, cpp_strip_objects, cpp_strip_binary],
+    subrules = [
+        cpp_compile,
+        cpp_strip_objects,
+        cpp_strip_binary,
+    ],
+    executable = True,
+)
+
+_cpp_test = rule(
+    implementation = binary_impl,
+    attrs = _bin_attrs,
+    toolchains = use_cpp_toolchain(),
+    fragments = ["cpp"],
+    provides = [DefaultInfo],
+    subrules = [
+        cpp_compile,
+        cpp_strip_objects,
+        cpp_strip_binary,
+    ],
+    test = True,
 )
 
 def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_prefix = "", include_prefix = "", **kwargs):
@@ -99,6 +118,16 @@ def cpp_shared_library(name, srcs = [], hdrs = [], deps = [], strip_include_pref
 
 def cpp_binary(name, **kwargs):
     _cpp_binary(
+        name = name,
+        bin_suffix = select({
+            "@bazel_tools//src/conditions:windows": ".exe",
+            "//conditions:default": "",
+        }),
+        **kwargs
+    )
+
+def cpp_test(name, **kwargs):
+    _cpp_test(
         name = name,
         bin_suffix = select({
             "@bazel_tools//src/conditions:windows": ".exe",
