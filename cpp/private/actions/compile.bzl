@@ -32,7 +32,7 @@ def _cpp_compile_impl(ctx, sources, headers, includes, modules, features, toolch
             action_name = action_name,
         )
 
-        outfile = ctx.actions.declare_file("_objs/" + src.basename + ".o")
+        outfile = ctx.actions.declare_file("_objs/" ctx.label.name + "/" + src.basename + ".o")
         args = get_compile_command_args(
             toolchain,
             source = src.path,
