@@ -123,7 +123,7 @@ def module_impl(ctx):
 
     headers = collect_external_headers(ctx.attr.deps)
     includes = depset(ctx.attr.includes, transitive = [collect_external_includes(ctx.attr.deps)])
-    modules = collect_modules(ctx.attr.deps)
+    modules = collect_modules(ctx.attr.deps + ctx.attr.partitions)
 
     extra_vars = {
         "cpp_precompiled_modules": [],
@@ -171,6 +171,7 @@ def module_impl(ctx):
         module_name = ctx.attr.module_name,
         pcm = pcm,
         objs = obj_files,
+        partitions = depset(ctx.attr.partitions),
     )
 
 def binary_impl(ctx):
