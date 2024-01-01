@@ -44,7 +44,7 @@ def collect_module_objects(deps):
 
     for dep in deps:
         if CppModuleInfo in dep:
-            obj_files.extend(dep[CppModuleInfo].objs)
+            obj_files.append(dep[CppModuleInfo].objs)
 
     return obj_files
 

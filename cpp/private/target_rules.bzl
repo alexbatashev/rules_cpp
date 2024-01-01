@@ -52,7 +52,7 @@ def shlib_impl(ctx):
     modules = collect_modules(ctx.attr.deps)
 
     obj_files = cpp_compile(ctx.files.srcs, all_headers, includes, modules, features, toolchain)
-    obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps)
+    obj_files = depset(cpp_strip_objects(obj_files, features, toolchain), transitive = collect_module_objects(ctx.attr.deps))
 
     shlib = ctx.actions.declare_file(ctx.attr.lib_prefix + ctx.attr.name + ctx.attr.lib_suffix)
     compile_output = shlib
@@ -61,7 +61,7 @@ def shlib_impl(ctx):
 
     link_flags, lib_inputs = resolve_linker_arguments(ctx, toolchain, features, compile_output.path, True)
 
-    for obj in obj_files:
+    for obj in obj_files.to_list():
         link_flags.append(obj.path)
 
     linker = cc_common.get_tool_for_action(
@@ -71,7 +71,7 @@ def shlib_impl(ctx):
 
     ctx.actions.run(
         outputs = [compile_output],
-        inputs = depset(obj_files, transitive = [lib_inputs, toolchain.all_files]),
+        inputs = depset(obj_files.to_list(), transitive = [lib_inputs, toolchain.all_files]),
         executable = linker,
         arguments = link_flags,
         mnemonic = "CppLinkSharedLibrary",
@@ -165,7 +165,7 @@ def module_impl(ctx):
     )
 
     obj_files = cpp_compile(ctx.files.srcs + [pcm], headers, includes, modules, features, toolchain, module_srcs = ctx.files.interface)
-    obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps + ctx.attr.partitions)
+    obj_files = depset(cpp_strip_objects(obj_files, features, toolchain), transitive = collect_module_objects(ctx.attr.deps + ctx.attr.partitions))
 
     return CppModuleInfo(
         module_name = ctx.attr.module_name,
@@ -197,7 +197,7 @@ def binary_impl(ctx):
     modules = collect_modules(ctx.attr.deps)
 
     obj_files = cpp_compile(ctx.files.srcs, all_headers, includes, modules, features, toolchain)
-    obj_files = cpp_strip_objects(obj_files, features, toolchain) + collect_module_objects(ctx.attr.deps)
+    obj_files = depset(cpp_strip_objects(obj_files, features, toolchain), transitive = collect_module_objects(ctx.attr.deps))
 
     bin = ctx.actions.declare_file(ctx.attr.name + ctx.attr.bin_suffix)
     compile_output = bin
@@ -206,7 +206,7 @@ def binary_impl(ctx):
 
     link_flags, lib_inputs = resolve_linker_arguments(ctx, toolchain, features, compile_output.path, False)
 
-    for obj in obj_files:
+    for obj in obj_files.to_list():
         link_flags.append(obj.path)
 
     linker = cc_common.get_tool_for_action(
@@ -216,7 +216,7 @@ def binary_impl(ctx):
 
     ctx.actions.run(
         outputs = [compile_output],
-        inputs = depset(obj_files, transitive = [lib_inputs, toolchain.all_files]),
+        inputs = depset(obj_files.to_list(), transitive = [lib_inputs, toolchain.all_files]),
         executable = linker,
         arguments = link_flags,
         mnemonic = "CppLinkExecutable",
