@@ -6,7 +6,7 @@ def collect_external_headers(deps):
 
     for dep in deps:
         if CcInfo in dep:
-            headers.extend(dep[CcInfo].compilation_context.headers)
+            headers.extend(dep[CcInfo].compilation_context.headers.to_list())
 
     return headers
 
