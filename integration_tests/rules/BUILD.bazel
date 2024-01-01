@@ -1,4 +1,5 @@
-load("@rules_cpp//cpp:rules.bzl", 
+load(
+    "@rules_cpp//cpp:rules.bzl",
     "clang_format",
     "cpp_binary",
     "cpp_module",
