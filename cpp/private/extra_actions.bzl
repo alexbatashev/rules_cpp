@@ -1,9 +1,11 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 
-CPP_MODULE_INTEFACE = "cpp-module-interface"
+CPP_MODULE_INTEFACE = "cpp20-module-interface"
+CPP_MODULE_COMPILE = "cpp20-module-compile"
 
 EXTRA_ACTIONS = struct(
     cpp_module_precompile_interface = CPP_MODULE_INTEFACE,
+    cpp_module_compile = CPP_MODULE_COMPILE,
 )
 
 all_c_compile_actions = [
@@ -18,6 +20,7 @@ all_cpp_compile_actions = [
     ACTION_NAMES.cpp_header_parsing,
     ACTION_NAMES.cpp_module_compile,
     ACTION_NAMES.cpp_module_codegen,
+    EXTRA_ACTIONS.cpp_module_compile,
 ]
 
 all_compile_actions = all_c_compile_actions + all_cpp_compile_actions

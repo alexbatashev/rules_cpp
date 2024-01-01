@@ -1,0 +1,62 @@
+name: Build GCC toolchain
+on:
+    workflow_dispatch:
+        inputs:
+            gcc_release:
+                required: true
+
+jobs:
+  build_linux_x64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -yqq libzstd-dev libisl-dev bisonc++ libisl-dev bison byacc libgmp-dev libmpfr-dev libmpc-dev flex m4
+      - name: Install multilib
+        run: sudo apt install -yqq gcc-multilib g++-multilib
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: "gcc.gnu.org/git/gcc.git"
+          ref: release/${{ inputs.gcc_release }}
+      - name: Build and install
+        env:
+          CXXFLAGS: -w
+          CFLAGS: -w
+        run: |
+            mkdir -p install/${{ inputs.gcc_release }}-linux-x86_64
+            ./configure --with-static-standard-libraries \
+                --enable-gold --enable-languages=c,c++,lto \
+                --enable-lto --host=x86_64-pc-linux-gnu \
+                --with-isl --with-zstd --prefix=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64
+            make -j2
+            make install
+
+            cd install
+
+            tar --zstd -cf ${{ inputs.gcc_release }}-linux-x86_64.tar.zst ${{ inputs.gcc_release }}-linux-x86_64
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: install/${{ inputs.gcc_release }}-linux-x86_64.tar.zst
+          name: linux-x86_64-toolchain
+
+  publish_release:
+      needs: ["build_linux_x64"]
+      runs-on: ubuntu-latest
+      steps:
+        - name: Download artifacts
+          uses: actions/download-artifact@v3
+        - name: Collect sha256 checksums
+          run: |
+            touch RELASE.txt
+            sha256sum linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64.tar.zst >> RELEASE.txt
+        - name: Create release
+          uses: softprops/action-gh-release@v1
+          with:
+            token: ${{ secrets.RELEASE_TOKEN }}
+            body_path: RELEASE.txt
+            tag_name: ${{ inputs.gcc_release }}-${{ github.sha }}
+            name: GCC Toolchain ${{ inputs.gcc_release }}
+            prerelease: true
+            files: |
+              linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64.tar.zst
