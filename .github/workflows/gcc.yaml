@@ -23,21 +23,26 @@ jobs:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
-            mkdir -p install/${{ inputs.gcc_release }}-linux-x86_64
+            mkdir -p install
             ./configure --with-static-standard-libraries \
                 --enable-gold --enable-languages=c,c++,lto \
                 --enable-lto --host=x86_64-pc-linux-gnu \
-                --with-isl --with-zstd --prefix=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64
-            make -j2
-            make install
+                --with-isl --with-zstd --prefix=/
+            make -j4
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-stdlib install-strip-target-libstdc++-v3
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-stdlib install-strip-target-libgcc
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-openmp install-strip-target-libgomp
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64 install-strip
 
             cd install
 
+            tar --zstd -cf ${{ inputs.gcc_release }}-linux-x86_64-stdlib.tar.zst ${{ inputs.gcc_release }}-linux-x86_64-stdlib
+            tar --zstd -cf ${{ inputs.gcc_release }}-linux-x86_64-openmp.tar.zst ${{ inputs.gcc_release }}-linux-x86_64-openmp
             tar --zstd -cf ${{ inputs.gcc_release }}-linux-x86_64.tar.zst ${{ inputs.gcc_release }}-linux-x86_64
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: install/${{ inputs.gcc_release }}-linux-x86_64.tar.zst
+          path: install/${{ inputs.gcc_release }}-linux-x86_64*.tar.zst
           name: linux-x86_64-toolchain
 
   publish_release:
@@ -50,6 +55,8 @@ jobs:
           run: |
             touch RELASE.txt
             sha256sum linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64.tar.zst >> RELEASE.txt
+            sha256sum linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64-stdlib.tar.zst >> RELEASE.txt
+            sha256sum linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64-openmp.tar.zst >> RELEASE.txt
         - name: Create release
           uses: softprops/action-gh-release@v1
           with:
@@ -60,3 +67,5 @@ jobs:
             prerelease: true
             files: |
               linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64.tar.zst
+              linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64-stdlib.tar.zst
+              linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64-openmp.tar.zst
