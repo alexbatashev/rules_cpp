@@ -23,18 +23,18 @@ jobs:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
-            mkdir -p install/${{ inputs.gcc_release }}-linux-x86_64
+            mkdir -p install
             ./configure --with-static-standard-libraries \
                 --enable-gold --enable-languages=c,c++,lto \
                 --enable-lto --host=x86_64-pc-linux-gnu \
                 --with-isl --with-zstd --prefix=/
             make -j4
-            make DESTDIR=install/${{ inputs.gcc_release }}-linux-x86_64-stdlib install-strip-target-libstdc++-v3
-            make DESTDIR=install/${{ inputs.gcc_release }}-linux-x86_64-stdlib install-strip-target-libgcc
-            make DESTDIR=install/${{ inputs.gcc_release }}-linux-x86_64-binutils install-strip-binutils
-            make DESTDIR=install/${{ inputs.gcc_release }}-linux-x86_64-ld install-strip-ld
-            make DESTDIR=install/${{ inputs.gcc_release }}-linux-x86_64-openmp install-strip-target-libgomp
-            make DESTDIR=install/${{ inputs.gcc_release }}-linux-x86_64 install-strip
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-stdlib install-strip-target-libstdc++-v3
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-stdlib install-strip-target-libgcc
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-binutils install-strip-binutils
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-ld install-strip-ld
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-openmp install-strip-target-libgomp
+            make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64 install-strip
 
             cd install
 
