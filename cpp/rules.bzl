@@ -47,6 +47,7 @@ _bin_attrs = {
 _module_attrs = {
     "srcs": attr.label_list(allow_files = True),
     "deps": attr.label_list(providers = [[CcInfo], [CppModuleInfo]]),
+    "partitions": attr.label_list(providers = [[CppModuleInfo]]),
     "module_name": attr.string(mandatory = True),
     "interface": attr.label(allow_files = True, mandatory = True),
     "includes": attr.string_list(),

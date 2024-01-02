@@ -39,7 +39,7 @@ def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_pre
                     ACTION_NAMES.cpp_header_parsing,
                     ACTION_NAMES.cpp_module_compile,
                     ACTION_NAMES.cpp_module_codegen,
-                ],
+                ] + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [
                     flag_group(
                         flags = ["-isystem" + x for x in include_dirs] + [

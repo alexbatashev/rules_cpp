@@ -179,6 +179,7 @@ def _get_clang_features(ctx):
             flag_set(
                 actions = all_cpp_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [
+                    flag_group(flags = ["-fno-implicit-modules"]),
                     flag_group(
                         iterate_over = "cpp_precompiled_modules",
                         expand_if_available = "cpp_precompiled_modules",

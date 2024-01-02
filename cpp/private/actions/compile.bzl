@@ -18,6 +18,7 @@ def _cpp_compile_impl(ctx, sources, headers, includes, modules, features, toolch
 
     for m in modules:
         module_files.append(m["file"])
+        module_files.append(m["source"])
         module_vars.append("{name}={file}".format(name = m["name"], file = m["file"].path))
 
     extra_vars["cpp_precompiled_modules"] = module_vars
@@ -31,7 +32,7 @@ def _cpp_compile_impl(ctx, sources, headers, includes, modules, features, toolch
             action_name = action_name,
         )
 
-        outfile = ctx.actions.declare_file("_objs/" + src.basename + ".o")
+        outfile = ctx.actions.declare_file("_objs/" + ctx.label.name + "/" + src.basename + ".o")
         args = get_compile_command_args(
             toolchain,
             source = src.path,
