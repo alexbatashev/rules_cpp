@@ -31,16 +31,12 @@ jobs:
             make -j4
             make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-stdlib install-strip-target-libstdc++-v3
             make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-stdlib install-strip-target-libgcc
-            # make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-binutils install-strip-binutils
-            # make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-ld install-strip-ld
             make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64-openmp install-strip-target-libgomp
             make DESTDIR=$PWD/install/${{ inputs.gcc_release }}-linux-x86_64 install-strip
 
             cd install
 
             tar --zstd -cf ${{ inputs.gcc_release }}-linux-x86_64-stdlib.tar.zst ${{ inputs.gcc_release }}-linux-x86_64-stdlib
-            # tar --zstd -cf ${{ inputs.gcc_release }}-linux-x86_64-binutils.tar.zst ${{ inputs.gcc_release }}-linux-x86_64-binutils
-            # tar --zstd -cf ${{ inputs.gcc_release }}-linux-x86_64-ld.tar.zst ${{ inputs.gcc_release }}-linux-x86_64-ld
             tar --zstd -cf ${{ inputs.gcc_release }}-linux-x86_64-openmp.tar.zst ${{ inputs.gcc_release }}-linux-x86_64-openmp
             tar --zstd -cf ${{ inputs.gcc_release }}-linux-x86_64.tar.zst ${{ inputs.gcc_release }}-linux-x86_64
       - name: Upload artifact
@@ -60,8 +56,6 @@ jobs:
             touch RELASE.txt
             sha256sum linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64.tar.zst >> RELEASE.txt
             sha256sum linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64-stdlib.tar.zst >> RELEASE.txt
-            # sha256sum linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64-binutils.tar.zst >> RELEASE.txt
-            # sha256sum linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64-ld.tar.zst >> RELEASE.txt
             sha256sum linux-x86_64-toolchain/${{ inputs.gcc_release }}-linux-x86_64-openmp.tar.zst >> RELEASE.txt
         - name: Create release
           uses: softprops/action-gh-release@v1
