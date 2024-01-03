@@ -96,8 +96,8 @@ for rt in runtime_targets:
 
 if not args.target_cpu.startswith("x86_64"):
     cmake_args.extend([
-        f"-DCMAKE_SYSTEM_NAME={args.target_cpu}",
         f"-DLLVM_HOST_TRIPLE={args.target_cpu}",
     ])
 
+print(' '.join(cmake_args))
 subprocess.run(cmake_args, check=True, stdout=subprocess.PIPE)
