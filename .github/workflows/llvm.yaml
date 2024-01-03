@@ -67,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
-          name: linux-x86_64-toolchain
+          name: linux-${{matrix.cpu}}-toolchain
   build_macos:
     runs-on: macos-13
     strategy:
@@ -134,6 +134,29 @@ jobs:
           run: |
             touch RELASE.txt
             sha256sum linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-tidy.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-doc.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-format.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clangd.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-bolt.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-lld.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-libcpp.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-tidy.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-doc.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-format.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clangd.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-bolt.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-lld.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-libcpp.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-tidy.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-doc.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-format.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clangd.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-bolt.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-lld.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-libcpp.tar.zst >> RELEASE.txt
             sha256sum macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64.tar.zst >> RELEASE.txt
             sha256sum  macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-tidy.tar.zst >> RELEASE.txt
             sha256sum  macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-doc.tar.zst >> RELEASE.txt
@@ -161,6 +184,29 @@ jobs:
             prerelease: true
             files: |
               linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-tidy.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-doc.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-format.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clangd.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-bolt.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-lld.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-libcpp.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-tidy.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-doc.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-format.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clangd.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-bolt.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-lld.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-libcpp.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-tidy.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-doc.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-format.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clangd.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-bolt.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-lld.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-libcpp.tar.zst
               macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64.tar.zst
               macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-tidy.tar.zst
               macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-doc.tar.zst
