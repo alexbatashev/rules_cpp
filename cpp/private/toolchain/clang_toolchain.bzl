@@ -35,14 +35,6 @@ def declare_clang_toolchains(name, compiler, linker, stdlib, binutils):
         ),
         struct(
             os = "@platforms//os:linux",
-            target_cpu = "@platforms//cpu:armv7",
-        ),
-        struct(
-            os = "@platforms//os:linux",
-            target_cpu = "@platforms//cpu:riscv32",
-        ),
-        struct(
-            os = "@platforms//os:linux",
             target_cpu = "@platforms//cpu:riscv64",
         ),
         struct(
