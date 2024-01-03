@@ -68,7 +68,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
+          path: install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
           name: linux-${{matrix.cpu}}-toolchain
   build_macos:
     runs-on: macos-13
@@ -125,7 +125,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: build/install/${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}*.tar.zst
+          path: install/${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}*.tar.zst
           name: macos-${{matrix.cpu}}-toolchain
 
   publish_release:
