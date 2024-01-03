@@ -55,6 +55,7 @@ def create_compilation_context(ctx, headers = [], is_aspect = False):
     Args:
         ctx: rule context
         headers: optional list of Files with target headers
+        is_aspect: True if this function is called from an aspect
 
     Returns:
         A structure containing compilation context
