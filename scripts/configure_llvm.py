@@ -100,4 +100,4 @@ if not args.target_cpu.startswith("x86_64"):
         f"-DLLVM_HOST_TRIPLE={args.target_cpu}",
     ])
 
-subprocess.run(' '.join(cmake_args), shell=True, check=True, stdout=subprocess.PIPE)
+subprocess.run(cmake_args, check=True, stdout=subprocess.PIPE)
