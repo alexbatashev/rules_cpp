@@ -1,4 +1,4 @@
-load("//cpp:repositories.bzl", "download_llvm")
+load("//cpp/private/llvm:download.bzl", "download_llvm")
 
 def _init_toolchain(ctx):
     for mod in ctx.modules:

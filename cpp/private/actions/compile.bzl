@@ -40,6 +40,7 @@ def _cpp_compile_impl(ctx, sources, headers, includes, modules, features, toolch
             features = features,
             include_directories = includes,
             extra_vars = extra_vars,
+            action_name = action_name,
         )
 
         ctx.actions.run(

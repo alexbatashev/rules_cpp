@@ -19,7 +19,7 @@ load(
     "preprocessor_compile_actions",
 )
 
-def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_prefix, rpath_prefix):
+def get_default_flags(include_dirs, link_dirs, exec_rpath_prefix, rpath_prefix):
     return feature(
         name = "default_flags",
         enabled = True,
@@ -28,7 +28,7 @@ def get_default_flags(std_compile_flags, include_dirs, link_dirs, exec_rpath_pre
                 actions = all_cpp_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = ([
                     flag_group(
-                        flags = std_compile_flags,
+                        flags = ["-std=c++17"],
                     ),
                 ]),
             ),

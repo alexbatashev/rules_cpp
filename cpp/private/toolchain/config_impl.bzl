@@ -12,6 +12,7 @@ load(
     "flag_set",
     "with_feature_set",
 )
+load("//cpp:providers.bzl", "BinutilsInfo", "CompilerInfo", "LinkerInfo", "StdlibInfo")
 load(
     "//cpp/private:extra_actions.bzl",
     "EXTRA_ACTIONS",
@@ -21,7 +22,7 @@ load(
     "all_link_actions",
 )
 load(
-    "//cpp/private:unix_toolchain_features.bzl",
+    "//cpp/private/toolchain:unix_toolchain_features.bzl",
     "cpp20_feature",
     "darwin_default_feature",
     "default_archiver_flags_feature",
@@ -40,21 +41,15 @@ load(
     "sysroot_feature",
     "werror_flags",
 )
-load("//cpp/private:utils.bzl", "is_clang", "is_libcpp", "is_lld", "is_llvm")
-load("//cpp/private:tool.bzl", "ToolInfo")
 
 def _get_include_paths(stdlib, compiler):
     include_dirs = []
-    stdlib_base = stdlib.label.workspace_root + "/"
-    compiler_base = compiler.dirname + "/../"
-    if is_libcpp(stdlib):
-        include_dirs += [
-            stdlib_base + "include/c++/v1",
-            stdlib_base + "include/x86_64-unknown-linux-gnu",
-            stdlib_base + "include/x86_64-unknown-linux-gnu/c++/v1",
-        ]
+    stdlib_base = stdlib.headers[0].owner.workspace_root + "/"
+    compiler_base = compiler.binary.dirname + "/../"
+    for inc in stdlib.includes:
+        include_dirs.append(stdlib_base + inc)
 
-    if is_clang(compiler):
+    if compiler.kind == "clang":
         include_dirs.append(
             compiler_base + "lib/clang/17/include",
         )
@@ -62,8 +57,8 @@ def _get_include_paths(stdlib, compiler):
     return include_dirs
 
 def _get_link_paths(stdlib, compiler):
-    stdlib_base = stdlib.label.workspace_root + "/"
-    compiler_base = compiler.dirname + "/../"
+    stdlib_base = stdlib.headers[0].root.path + "/"
+    compiler_base = compiler.binary.dirname + "/../"
 
     link_dirs = [stdlib_base + "lib"]
 
@@ -120,42 +115,6 @@ def _get_clang_features(ctx):
             actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
             flag_groups = [flag_group(flags = ["-Weverything"])],
         )],
-    )
-
-    compiler_base = ctx.attr.compiler[ToolInfo].executable.dirname
-
-    static_stdlib_flags = [
-        "-lc",
-        "-Wno-unused-command-line-argument",
-        "-static-libstdc++",
-        compiler_base + "/../lib/libc++abi.a",
-        compiler_base + "/../lib/libc++.a",
-        compiler_base + "/../lib/libunwind.a",
-        "-static-libgcc",
-    ]
-
-    dynamic_stdlib_flags = [
-        "-lc",
-        "-lc++abi",
-        "-lc++",
-        "-lunwind",
-    ]
-
-    stdlib_feature = feature(
-        name = "stdlib",
-        enabled = True,
-        flag_sets = [
-            flag_set(
-                actions = all_link_actions,
-                flag_groups = [flag_group(flags = static_stdlib_flags)],
-                with_features = [with_feature_set(features = ["static_link_cpp_runtimes"])],
-            ),
-            flag_set(
-                actions = all_link_actions,
-                flag_groups = [flag_group(flags = dynamic_stdlib_flags)],
-                with_features = [with_feature_set(not_features = ["static_link_cpp_runtimes"])],
-            ),
-        ],
     )
 
     module_interface_precompile_feature = feature(
@@ -216,39 +175,39 @@ def _get_clang_features(ctx):
     return [
         triple_feature,
         weverything_feature,
-        stdlib_feature,
         module_interface_precompile_feature,
         lld_feature,
         use_modules,
     ]
 
-def _get_action_configs(compiler, strip, archiver):
+def _get_action_configs(compiler, binutils):
     return [
-        action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = compiler)])
+        action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = compiler.binary)])
         for name in all_c_compile_actions + all_cpp_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface]
     ] + [
-        action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = archiver)])
+        action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = binutils.ar)])
         for name in [ACTION_NAMES.cpp_link_static_library]
     ] + [
-        action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = strip)])
+        action_config(action_name = name, enabled = True, tools = [struct(type_name = "tool", tool = binutils.strip)])
         for name in [ACTION_NAMES.strip]
     ]
 
 def _get_default_features(ctx, compiler, std_compile_flags, include_dirs, link_dirs):
     features = [
-        feature(name = "clang", enabled = is_clang(compiler)),
+        feature(name = "clang", enabled = compiler.kind == "clang"),
+        feature(name = "gcc", enabled = compiler.kind == "gcc"),
         feature(name = "dbg"),
         feature(name = "fastbuild"),
         feature(name = "host"),
         feature(name = "no_legacy_features"),
         feature(name = "nonhost"),
         feature(name = "opt"),
-        feature(name = "supports_dynamic_linker", enabled = ctx.attr.target_cpu == "k8"),
+        feature(name = "supports_dynamic_linker", enabled = ctx.attr.target_cpu in ["x86_64"]),
         feature(name = "supports_pic", enabled = True),
-        feature(name = "supports_start_end_lib", enabled = ctx.attr.target_cpu == "k8"),
+        feature(name = "supports_start_end_lib", enabled = ctx.attr.target_cpu in ["x86_64"]),
     ]
 
-    default_flags_feature = get_default_flags(std_compile_flags, include_dirs, link_dirs, _get_exec_rpath_prefix(ctx), _get_rpath_prefix(ctx))
+    default_flags_feature = get_default_flags(include_dirs, link_dirs, _get_exec_rpath_prefix(ctx), _get_rpath_prefix(ctx))
 
     features += [
         default_flags_feature,
@@ -281,31 +240,92 @@ def bazel_toolchain_impl(ctx):
     C++ toolchain for builtin Bazel rules
     """
 
-    compiler = ctx.attr.compiler[ToolInfo].executable
-
-    # linker = ctx.attr.tools['linker'][DefaultInfo].executable
-    archiver = ctx.attr.archiver[ToolInfo].executable
-    strip = ctx.attr.linker[ToolInfo].executable
-    stdlib = ctx.attr.stdlib
+    compiler = ctx.attr.compiler[CompilerInfo]
+    linker = ctx.attr.linker[LinkerInfo]
+    binutils = ctx.attr.binutils[BinutilsInfo]
+    stdlib = ctx.attr.stdlib[StdlibInfo]
 
     include_dirs = _get_include_paths(stdlib, compiler)
     link_dirs = _get_link_paths(stdlib, compiler)
 
-    action_configs = _get_action_configs(compiler, strip, archiver)
+    action_configs = _get_action_configs(compiler, binutils)
 
-    std_compile_flags = ["-std=c++17"]
+    std_compile_flags = []
 
-    if is_libcpp(stdlib):
+    if stdlib.kind == "libc++":
         std_compile_flags.append("-stdlib=libc++")
     else:
         std_compile_flags.append("-stdlib=libstdc++")
 
+    stdlib_feature = feature(
+        name = "c++-standard-library",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = all_cpp_compile_actions,
+                flag_groups = [
+                    flag_group(
+                        flags = std_compile_flags,
+                    ),
+                ],
+            ),
+        ],
+    )
+
     features = _get_default_features(ctx, compiler, std_compile_flags, include_dirs, link_dirs)
-    if is_clang(compiler):
+    if compiler.kind == "clang":
         features += _get_clang_features(ctx)
 
     if ctx.attr.target_os in ["macos"]:
         features.append(darwin_default_feature)
+
+    compiler_base = ctx.attr.compiler[CompilerInfo].binary.dirname
+
+    static_libcpp_flags = [
+        "-lc",
+        "-Wno-unused-command-line-argument",
+        "-static-libstdc++",
+        compiler_base + "/../lib/libc++abi.a",
+        compiler_base + "/../lib/libc++.a",
+        compiler_base + "/../lib/libc++experimental.a",
+        compiler_base + "/../lib/libunwind.a",
+        "-static-libgcc",
+    ]
+
+    dynamic_libcpp_flags = [
+        "-lc",
+        "-lc++abi",
+        "-lc++",
+        "-lc++experimental",
+        "-lunwind",
+    ]
+
+    libcpp_feature = feature(
+        name = "libc++",
+        enabled = stdlib.kind == "libc++",
+        flag_sets = [
+            flag_set(
+                actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                flag_groups = [flag_group(flags = ["-nostdinc++", "-D_LIBCPP_ENABLE_EXPERIMENTAL"])],
+            ),
+            flag_set(
+                actions = all_link_actions,
+                flag_groups = [flag_group(flags = ["-nostdlib++"])],
+            ),
+            flag_set(
+                actions = all_link_actions,
+                flag_groups = [flag_group(flags = static_libcpp_flags)],
+                with_features = [with_feature_set(features = ["static_link_cpp_runtimes"])],
+            ),
+            flag_set(
+                actions = all_link_actions,
+                flag_groups = [flag_group(flags = dynamic_libcpp_flags)],
+                with_features = [with_feature_set(not_features = ["static_link_cpp_runtimes"])],
+            ),
+        ],
+    )
+
+    features.append(libcpp_feature)
 
     features += _get_final_features()
 
