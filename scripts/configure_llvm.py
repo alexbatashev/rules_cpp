@@ -77,6 +77,9 @@ cmake_args = [
     "-DLLVM_Toolchain_DISTRIBUTION_COMPONENTS=clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld;{}".format(';'.join(llvm_tools)),
 ]
 
+if platform.system() == "Darwin":
+    cmake_args.append("-DRUNTIMES_BUILD_ALLOW_DARWIN=ON")
+
 for rt in runtime_targets:
     cmake_args.extend([
         f"-DRUNTIMES_{rt}_OPENMP_LIBDIR_SUFFIX={rt}",
