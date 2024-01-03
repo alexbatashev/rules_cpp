@@ -1,5 +1,18 @@
-load("@rules_cpp//cpp:rules.bzl", "declare_clang_toolchains")
-load("@rules_cpp//cpp/private:tool.bzl", "tool")
+load("@rules_cpp//cpp:rules.bzl", 
+  "declare_clang_toolchains",
+  "compiler",
+  "standard_library",
+  "binutils",
+  "linker",
+)
+
+filegroup(
+  name = "openmp",
+  srcs = glob([
+    "lib/*omp*",
+  ]),
+  visibility = ["//visibility:public"],
+)
 
 filegroup(
   name = "clang-files",
@@ -7,38 +20,27 @@ filegroup(
     "bin/clang*",
     "lib/clang/**/*",
     "lib/*LTO*",
+    "lib/libclang*",
+    "lib/libLLVM*",
   ]),
-  visibility = ["//visibility:public"],
 )
 
-filegroup(
+compiler(
+  name = "clang",
+  kind = "clang",
+  binary = "bin/clang",
+  deps = [":clang-files", ":openmp"]
+)
+
+binutils(
   name = "binutils",
-  srcs = glob([
-    "bin/llvm-objcopy*",
-    "bin/llvm-dwp*",
-    "bin/llvm-cov*",
-    "bin/llvm-strip*",
-    "bin/llvm-nm*",
-    "bin/llvm-ar*",
-    "bin/llvm-strings*",
-  ]),
-  visibility = ["//visibility:public"],
-)
-
-tool(
-  name = "strip",
-  executable = "bin/llvm-strip",
-)
-
-tool(
-  name = "ar",
-  executable = "bin/llvm-ar",
-)
-
-filegroup(
-  name = "openmp",
-  srcs = glob([
-    "lib/*omp*",
+  ar = "bin/llvm-ar",
+  assembler = "bin/clang",
+  objcopy = "bin/llvm-objcopy",
+  strip = "bin/llvm-strip",
+  dwp = "bin/llvm-dwp",
+  deps = glob([
+    "bin/llvm-*",
   ]),
   visibility = ["//visibility:public"],
 )
@@ -52,45 +54,34 @@ filegroup(
   visibility = ["//visibility:public"],
 )
 
-tool(
+linker(
   name = "lld",
-  executable = "bin/lld",
+  kind = "lld",
+  binary = "bin/ld.lld",
+  deps = [":lld-files"],
   visibility = ["//visibility:public"],
-  data = [":lld-files"]
 )
 
-filegroup(
+standard_library(
   name = "libc++",
-  srcs = glob([
+  kind = "libc++",
+  headers = glob([
     "include/c++/**/*",
     "include/x86_64-unknown-linux-gnu/**/*",
-    "lib/*c++*",
   ]),
-  visibility = ["//visibility:public"],
-)
-
-filegroup(
-  name = "static_libc++",
-  srcs = glob([
+  shared_libraries = glob([
+    "lib/**/*c++*.so",
+    "lib/**/*c++*.dylib",
+  ]),
+  static_libraries = glob([
     "lib/**/libc++.a",
     "lib/**/libc++abi.a",
     "lib/**/libunwind.a",
   ]),
-  visibility = ["//visibility:public"],
-)
-
-tool(
-  name = "clang",
-  executable = "bin/clang",
-  data = [
-    ":clang-files",
-    ":binutils",
-    ":openmp",
-    ":lld",
-    ":libc++",
-    ":static_libc++",
-  ],
-  visibility = ["//visibility:public"],
+  includes = [
+      "include/c++/v1",
+      "include/x86_64-unknown-linux-gnu/c++/v1",
+  ]
 )
 
 declare_clang_toolchains(
@@ -98,8 +89,5 @@ declare_clang_toolchains(
   compiler = ":clang",
   linker = ":lld",
   stdlib = ":libc++",
-  static_stdlib = ":static_libc++",
   binutils = ":binutils",
-  strip = ":strip",
-  archiver = ":ar",
 )
