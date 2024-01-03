@@ -291,7 +291,6 @@ def bazel_toolchain_impl(ctx):
     ]
 
     dynamic_libcpp_flags = [
-        "-Wl,-rpath,$EXECROOT/" + stdlib_base,
         "-lc",
         "-lc++abi",
         "-lc++",
