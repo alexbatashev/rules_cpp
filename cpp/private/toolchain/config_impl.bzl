@@ -80,13 +80,6 @@ def _get_link_paths(stdlib, compiler, target_os, target_cpu):
 
     return link_dirs
 
-def _get_exec_rpath_prefix(ctx):
-    if ctx.attr.target_os in ["linux"]:
-        return "$EXECROOT/"
-    elif ctx.attr.target_os in ["macos"]:
-        return "@loader_path/../../../"
-    return None
-
 def _get_rpath_prefix(ctx):
     if ctx.attr.target_os in ["linux"]:
         return "$ORIGIN/"
@@ -221,7 +214,7 @@ def _get_default_features(ctx, compiler, include_dirs, link_dirs):
         feature(name = "static_stdlib", enabled = True),
     ]
 
-    default_flags_feature = get_default_flags(include_dirs, link_dirs, _get_exec_rpath_prefix(ctx), _get_rpath_prefix(ctx))
+    default_flags_feature = get_default_flags(include_dirs, link_dirs, _get_rpath_prefix(ctx))
 
     features += [
         default_flags_feature,
@@ -328,9 +321,12 @@ def bazel_toolchain_impl(ctx):
 
     sysroot = None
 
+    if ctx.attr.target_os == "macos":
+        sysroot = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+
     # FIXME: completely seal the toolchain?
     include_dirs.append("/usr/include/")
-    include_dirs.append("/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include")
+    include_dirs.append("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include")
 
     return cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
