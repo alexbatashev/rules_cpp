@@ -4,7 +4,6 @@ import subprocess
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--target_cpu", type=str, required=True)
-parser.add_argument("--install_prefix", type=str, required=True)
 parser.add_argument("--build_dir", type=str, required=True)
 
 args = parser.parse_args()
@@ -54,7 +53,7 @@ cmake_args = [
     "-DCMAKE_C_COMPILER=clang",
     "-DCMAKE_CXX_COMPILER=clang++",
     "-DCMAKE_BUILD_TYPE=Release",
-    "-DCMAKE_INSTALL_PREFIX={}".format(args.install_prefix),
+    "-DCMAKE_INSTALL_PREFIX=\"/\"",
     "-DLLVM_TARGETS_TO_BUILD={}".format(';'.join(targets_to_build)),
     "-DLLVM_RUNTIME_TARGETS={}".format(';'.join(runtime_targets)),
     "-DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON",

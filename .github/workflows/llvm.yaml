@@ -38,7 +38,7 @@ jobs:
         run: |
           mkdir build && mkdir install
 
-          python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-unknown-linux-gnu" --install_prefix=/ --build_dir=$PWD/build
+          python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-unknown-linux-gnu" --build_dir=$PWD/build
           
           cd build
 
@@ -95,7 +95,7 @@ jobs:
         run: |
           mkdir build && mkdir install
 
-          python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-apple-darwin" --install_prefix=/ --build_dir=$PWD/build
+          python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-apple-darwin" --build_dir=$PWD/build
 
           cd build
           
