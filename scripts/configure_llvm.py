@@ -1,0 +1,103 @@
+import argparse
+import platform
+import subprocess
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--target_cpu", type=str, required=True)
+parser.add_argument("--install_prefix", type=str, required=True)
+parser.add_argument("--build_dir", type=str, required=True)
+
+args = parser.parse_args()
+
+llvm_tools = [
+    "dsymutil",
+    "llvm-ar",
+    "llvm-cxxfilt",
+    "llvm-cov",
+    "llvm-dwarfdump",
+    "llvm-nm",
+    "llvm-objdump",
+    "llvm-objcopy",
+    "llvm-profdata",
+    "llvm-ranlib",
+    "llvm-readobj",
+    "llvm-strip",
+    "llvm-size",
+    "llvm-symbolizer"
+]
+
+runtime_targets = []
+targets_to_build = []
+
+if platform.system() == "Linux":
+    runtime_targets = [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "riscv64-unknown-linux-gnu",
+    ]
+    targets_to_build = ["X86",
+                        "AArch64",
+                        "NVPTX",
+                        "AMDGPU",
+                        "RISCV"]
+elif platform.system() == "Darwin":
+    runtime_targets = [args.target_cpu]
+    targets_to_build = ["X86", "AArch64"]
+
+cmake_args = [
+    "cmake",
+    "-GNinja",
+    "-B",
+    args.build_dir,
+    "-S",
+    "llvm/llvm",
+    "-DCMAKE_C_COMPILER=clang",
+    "-DCMAKE_CXX_COMPILER=clang++",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DCMAKE_INSTALL_PREFIX={}".format(args.install_prefix),
+    "-DLLVM_TARGETS_TO_BUILD={}".format(';'.join(targets_to_build)),
+    "-DLLVM_RUNTIME_TARGETS={}".format(';'.join(runtime_targets)),
+    "-DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON",
+    "-DLLVM_ENABLE_TERMINFO=OFF",
+    "-DLLVM_ENABLE_ZLIB=OFF",
+    "-DLLVM_ENABLE_ZSTD=OFF",
+    "-DLLVM_ENABLE_RUNTIMES=libunwind;compiler-rt;libcxx;libcxxabi;openmp"
+    "-DLLVM_ENABLE_PROJECTS=bolt;clang;clang-tools-extra;lld;pstl",
+    "-DLLVM_STATIC_LINK_CXX_STDLIB=ON",
+    "-DLLVM_INSTALL_TOOLCHAIN_ONLY=ON",
+    "-DLIBCXX_HERMETIC_STATIC_LIBRARY=ON",
+    "-DLIBCXXABI_USE_LLVM_UNWINDER=ON",
+    "-DLIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY=ON",
+    "-DLIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY=ON",
+    "-DLLVM_TOOLCHAIN_TOOLS={}".format(';'.join(llvm_tools)),
+    "-DLLVM_DISTRIBUTIONS=clang_tidy;clang_doc;clang_format;clangddist;boltdist;llddist;stdlib;toolchain",
+    "-DLLVM_clang_tidy_DISRTIBUTION_COMPONENTS=clang-tidy",
+    "-DLLVM_clang_doc_DISRTIBUTION_COMPONENTS=clang-doc",
+    "-DLLVM_clang_format_DISRTIBUTION_COMPONENTS=clang-format",
+    "-DLLVM_clangddist_DISRTIBUTION_COMPONENTS=clangd",
+    "-DLLVM_boltdist_DISRTIBUTION_COMPONENTS=bolt",
+    "-DLLVM_llddist_DISRTIBUTION_COMPONENTS=lld",
+    "-DLLVM_stdlib_DISRTIBUTION_COMPONENTS=cxx;cxx-headers;ccxabi;unwind",
+    "-DLLVM_toolchain_DISTRIBUTION_COMPONENTS=clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld;{}".format(';'.join(llvm_tools)),
+]
+
+for rt in runtime_targets:
+    cmake_args.extend([
+        f"-DRUNTIMES_{rt}_OPENMP_LIBDIR_SUFFIX={rt}",
+        f"-DRUNTIMES_{rt}_OPENMP_STANDALONE_BUILD=ON",
+        f"-DRUNTIMES_{rt}_OPENMP_LLVM_TOOLS_DIR={args.build_dir}/bin",
+    ])
+
+    if rt != "x86_64-unknown-linux-gnu":
+        cmake_args.extend([
+            f"-DRUNTIMES_{rt}_OPENMP_ENABLE_LIBOMPTARGET=OFF",
+            f"-DRUNTIMES_{rt}_LIBOMP_OMPD_GDB_SUPPORT=OFF",
+        ])
+
+if not args.target_cpu.startswith("x86_64"):
+    cmake_args.extend([
+        f"-DCMAKE_SYSTEM_NAME={args.target_cpu}",
+        f"-DLLVM_HOST_TRIPLE={args.target_cpu}",
+    ])
+
+subprocess.run(' '.join(cmake_args), shell=True, check=True, stdout=subprocess.PIPE)
