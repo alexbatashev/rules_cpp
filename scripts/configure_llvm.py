@@ -65,10 +65,6 @@ cmake_args = [
     "-DLLVM_ENABLE_PROJECTS=bolt;clang;clang-tools-extra;lld;pstl",
     "-DLLVM_STATIC_LINK_CXX_STDLIB=ON",
     "-DLLVM_INSTALL_TOOLCHAIN_ONLY=ON",
-    "-DLIBCXX_HERMETIC_STATIC_LIBRARY=ON",
-    "-DLIBCXXABI_USE_LLVM_UNWINDER=ON",
-    "-DLIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY=ON",
-    "-DLIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY=ON",
     "-DLLVM_TOOLCHAIN_TOOLS={}".format(';'.join(llvm_tools)),
     "-DLLVM_DISTRIBUTIONS=ClangTidy;ClangDoc;ClangFormat;ClangdTool;BoltTool;LldTool;StdLib;Toolchain",
     "-DLLVM_ClangTidy_DISTRIBUTION_COMPONENTS=clang-tidy",
@@ -77,7 +73,7 @@ cmake_args = [
     "-DLLVM_ClangdTool_DISTRIBUTION_COMPONENTS=clangd",
     "-DLLVM_BoltTool_DISTRIBUTION_COMPONENTS=bolt",
     "-DLLVM_LldTool_DISTRIBUTION_COMPONENTS=lld",
-    "-DLLVM_StdLib_DISTRIBUTION_COMPONENTS=cxx;cxx-headers;ccxabi;unwind",
+    "-DLLVM_StdLib_DISTRIBUTION_COMPONENTS=runtimes",
     "-DLLVM_Toolchain_DISTRIBUTION_COMPONENTS=clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld;{}".format(';'.join(llvm_tools)),
 ]
 
@@ -86,6 +82,10 @@ for rt in runtime_targets:
         f"-DRUNTIMES_{rt}_OPENMP_LIBDIR_SUFFIX={rt}",
         f"-DRUNTIMES_{rt}_OPENMP_STANDALONE_BUILD=ON",
         f"-DRUNTIMES_{rt}_OPENMP_LLVM_TOOLS_DIR={args.build_dir}/bin",
+        f"-DRUNTIMES_{rt}_LIBCXX_HERMETIC_STATIC_LIBRARY=ON",
+        f"-DRUNTIMES_{rt}_LIBCXXABI_USE_LLVM_UNWINDER=ON",
+        f"-DRUNTIMES_{rt}_LIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY=ON",
+        f"-DRUNTIMES_{rt}_LIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY=ON",
     ])
 
     if rt != "x86_64-unknown-linux-gnu":
