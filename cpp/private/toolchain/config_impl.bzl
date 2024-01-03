@@ -218,7 +218,7 @@ def _get_default_features(ctx, compiler, include_dirs, link_dirs):
         feature(name = "supports_dynamic_linker", enabled = ctx.attr.target_cpu in ["x86_64"]),
         feature(name = "supports_pic", enabled = True),
         feature(name = "supports_start_end_lib", enabled = ctx.attr.target_cpu in ["x86_64"]),
-        feature(name = "static_stdlib", enabled=True)
+        feature(name = "static_stdlib", enabled = True),
     ]
 
     default_flags_feature = get_default_flags(include_dirs, link_dirs, _get_exec_rpath_prefix(ctx), _get_rpath_prefix(ctx))
@@ -261,6 +261,7 @@ def bazel_toolchain_impl(ctx):
     """
 
     compiler = ctx.attr.compiler[CompilerInfo]
+
     # FIXME propagate linker flags
     # linker = ctx.attr.linker[LinkerInfo]
     binutils = ctx.attr.binutils[BinutilsInfo]
