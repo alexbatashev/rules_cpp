@@ -134,6 +134,7 @@ def module_impl(ctx):
 
     for m in modules:
         module_files.append(m["file"])
+        module_files.append(m["source"])
         module_vars.append("{name}={file}".format(name = m["name"], file = m["file"].path))
 
     extra_vars["cpp_precompiled_modules"] = module_vars

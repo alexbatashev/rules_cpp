@@ -19,7 +19,7 @@ load(
     "preprocessor_compile_actions",
 )
 
-def get_default_flags(include_dirs, link_dirs, exec_rpath_prefix, rpath_prefix):
+def get_default_flags(include_dirs, link_dirs, rpath_prefix):
     return feature(
         name = "default_flags",
         enabled = True,
@@ -47,8 +47,8 @@ def get_default_flags(include_dirs, link_dirs, exec_rpath_prefix, rpath_prefix):
                             "-no-canonical-prefixes",
                             # TODO enable this option for GCC
                             # "-fno-canonical-system-headers",
-                            "-isystem",
-                            "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include",
+                            # "-isystem",
+                            # "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include",
                         ],
                     ),
                 ],
@@ -127,9 +127,6 @@ def get_default_flags(include_dirs, link_dirs, exec_rpath_prefix, rpath_prefix):
                     ),
                     flag_group(
                         flags = ["-Wl,-L" + d for d in link_dirs],
-                    ),
-                    flag_group(
-                        flags = ["-Wl,-rpath," + exec_rpath_prefix + d for d in link_dirs],
                     ),
                     flag_group(
                         flags = ["-Wl,--gdb-index"],
@@ -257,25 +254,12 @@ darwin_default_feature = feature(
     enabled = True,
     flag_sets = [
         flag_set(
-            actions = all_compile_actions,
-            flag_groups = (
-                [
-                    flag_group(
-                        flags = [
-                            "-isystem",
-                            "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include",
-                        ],
-                    ),
-                ]
-            ),
-        ),
-        flag_set(
-            actions = all_link_actions,
+            actions = all_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
+            with_features = [with_feature_set(not_features = ["sysroot"])],
             flag_groups = [
                 flag_group(
                     flags = [
-                        "-L",
-                        "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/lib",
+                        "--sysroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
                     ],
                 ),
             ],

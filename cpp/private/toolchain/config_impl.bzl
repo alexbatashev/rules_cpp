@@ -56,23 +56,29 @@ def _get_include_paths(stdlib, compiler):
 
     return include_dirs
 
-def _get_link_paths(stdlib, compiler):
-    stdlib_base = stdlib.headers[0].root.path + "/"
+def _get_stdlib_prefix(stdlib, target_os, target_cpu):
+    stdlib_base = stdlib.headers[0].owner.workspace_root + "/lib"
+
+    if stdlib.kind == "libc++":
+        if target_os == "linux":
+            if target_cpu == "x86_64":
+                stdlib_base += "/x86_64-unknown-linux-gnu"
+            elif target_cpu == "aarch64":
+                stdlib_base += "/aarch64-unknown-linux-gnu"
+            elif target_cpu == "riscv64":
+                stdlib_base += "/riscv64-unknown-linux-gnu"
+
+    return stdlib_base
+
+def _get_link_paths(stdlib, compiler, target_os, target_cpu):
     compiler_base = compiler.binary.dirname + "/../"
 
-    link_dirs = [stdlib_base + "lib"]
+    link_dirs = [_get_stdlib_prefix(stdlib, target_os, target_cpu)]
 
     if link_dirs[0] != compiler_base + "lib":
         link_dirs.append(compiler_base + "lib")
 
     return link_dirs
-
-def _get_exec_rpath_prefix(ctx):
-    if ctx.attr.target_os in ["linux"]:
-        return "$EXECROOT/"
-    elif ctx.attr.target_os in ["macos"]:
-        return "@loader_path/../../../"
-    return None
 
 def _get_rpath_prefix(ctx):
     if ctx.attr.target_os in ["linux"]:
@@ -192,7 +198,7 @@ def _get_action_configs(compiler, binutils):
         for name in [ACTION_NAMES.strip]
     ]
 
-def _get_default_features(ctx, compiler, std_compile_flags, include_dirs, link_dirs):
+def _get_default_features(ctx, compiler, include_dirs, link_dirs):
     features = [
         feature(name = "clang", enabled = compiler.kind == "clang"),
         feature(name = "gcc", enabled = compiler.kind == "gcc"),
@@ -205,9 +211,10 @@ def _get_default_features(ctx, compiler, std_compile_flags, include_dirs, link_d
         feature(name = "supports_dynamic_linker", enabled = ctx.attr.target_cpu in ["x86_64"]),
         feature(name = "supports_pic", enabled = True),
         feature(name = "supports_start_end_lib", enabled = ctx.attr.target_cpu in ["x86_64"]),
+        feature(name = "static_stdlib", enabled = True),
     ]
 
-    default_flags_feature = get_default_flags(include_dirs, link_dirs, _get_exec_rpath_prefix(ctx), _get_rpath_prefix(ctx))
+    default_flags_feature = get_default_flags(include_dirs, link_dirs, _get_rpath_prefix(ctx))
 
     features += [
         default_flags_feature,
@@ -238,57 +245,41 @@ def _get_final_features():
 def bazel_toolchain_impl(ctx):
     """
     C++ toolchain for builtin Bazel rules
+
+    Args:
+        ctx: rule context
+
+    Returns:
+        C++ toolchain configuration
     """
 
     compiler = ctx.attr.compiler[CompilerInfo]
-    linker = ctx.attr.linker[LinkerInfo]
+
+    # FIXME propagate linker flags
+    # linker = ctx.attr.linker[LinkerInfo]
     binutils = ctx.attr.binutils[BinutilsInfo]
     stdlib = ctx.attr.stdlib[StdlibInfo]
 
     include_dirs = _get_include_paths(stdlib, compiler)
-    link_dirs = _get_link_paths(stdlib, compiler)
+    link_dirs = _get_link_paths(stdlib, compiler, ctx.attr.target_os, ctx.attr.target_cpu)
 
     action_configs = _get_action_configs(compiler, binutils)
 
-    std_compile_flags = []
-
-    if stdlib.kind == "libc++":
-        std_compile_flags.append("-stdlib=libc++")
-    else:
-        std_compile_flags.append("-stdlib=libstdc++")
-
-    stdlib_feature = feature(
-        name = "c++-standard-library",
-        enabled = True,
-        flag_sets = [
-            flag_set(
-                actions = all_cpp_compile_actions,
-                flag_groups = [
-                    flag_group(
-                        flags = std_compile_flags,
-                    ),
-                ],
-            ),
-        ],
-    )
-
-    features = _get_default_features(ctx, compiler, std_compile_flags, include_dirs, link_dirs)
+    features = _get_default_features(ctx, compiler, include_dirs, link_dirs)
     if compiler.kind == "clang":
         features += _get_clang_features(ctx)
 
     if ctx.attr.target_os in ["macos"]:
         features.append(darwin_default_feature)
 
-    compiler_base = ctx.attr.compiler[CompilerInfo].binary.dirname
+    stdlib_base = _get_stdlib_prefix(stdlib, ctx.attr.target_os, ctx.attr.target_cpu)
 
     static_libcpp_flags = [
         "-lc",
         "-Wno-unused-command-line-argument",
-        "-static-libstdc++",
-        compiler_base + "/../lib/libc++abi.a",
-        compiler_base + "/../lib/libc++.a",
-        compiler_base + "/../lib/libc++experimental.a",
-        compiler_base + "/../lib/libunwind.a",
+        stdlib_base + "/libc++abi.a",
+        stdlib_base + "/libc++.a",
+        stdlib_base + "/libunwind.a",
         "-static-libgcc",
     ]
 
@@ -296,7 +287,6 @@ def bazel_toolchain_impl(ctx):
         "-lc",
         "-lc++abi",
         "-lc++",
-        "-lc++experimental",
         "-lunwind",
     ]
 
@@ -315,12 +305,12 @@ def bazel_toolchain_impl(ctx):
             flag_set(
                 actions = all_link_actions,
                 flag_groups = [flag_group(flags = static_libcpp_flags)],
-                with_features = [with_feature_set(features = ["static_link_cpp_runtimes"])],
+                with_features = [with_feature_set(features = ["static_stdlib"])],
             ),
             flag_set(
                 actions = all_link_actions,
                 flag_groups = [flag_group(flags = dynamic_libcpp_flags)],
-                with_features = [with_feature_set(not_features = ["static_link_cpp_runtimes"])],
+                with_features = [with_feature_set(not_features = ["static_stdlib"])],
             ),
         ],
     )
@@ -331,9 +321,12 @@ def bazel_toolchain_impl(ctx):
 
     sysroot = None
 
+    if ctx.attr.target_os == "macos":
+        sysroot = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+
     # FIXME: completely seal the toolchain?
     include_dirs.append("/usr/include/")
-    include_dirs.append("/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include")
+    include_dirs.append("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include")
 
     return cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
