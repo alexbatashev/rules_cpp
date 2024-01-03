@@ -40,20 +40,22 @@ jobs:
 
           python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-unknown-linux-gnu" --install_prefix=/ --build_dir=$PWD/build
           
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-tidy ninja install-clang_tidy-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-doc ninja install-clang_doc-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-format ninja install-clang_format-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clangd ninja install-clangddist-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-bolt ninja install-boltdist-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-lld ninja install-llddist-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-libcpp ninja install-stdlib-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}} ninja install-toolchain-stripped
+          cd build
+
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-tidy ninja install-clangtidy-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-doc ninja install-clangdoc-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-format ninja install-clangformat-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clangd ninja install-clangdtool-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-bolt ninja install-bolttool-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-lld ninja install-lldtool-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-libcpp ninja install-stdlib-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}} ninja install-toolchain-stripped
 
           ninja llvm-dwp
           DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}} ninja install-pstl
-          cp ./bin/llvm-dwp ./install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}/bin
+          cp ./bin/llvm-dwp ../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}/bin
 
-          cd install
+          cd ../install
 
           tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}
           tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clang-tidy.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clang-tidy
@@ -94,21 +96,23 @@ jobs:
           mkdir build && mkdir install
 
           python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-apple-darwin" --install_prefix=/ --build_dir=$PWD/build
+
+          cd build
           
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-tidy ninja install-clang_tidy-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-doc ninja install-clang_doc-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-format ninja install-clang_format-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clangd ninja install-clangddist-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-bolt ninja install-boltdist-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-lld ninja install-llddist-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-libcpp ninja install-stdlib-stripped
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-toolchain-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-tidy ninja install-clangtidy-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-doc ninja install-clangdoc-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-format ninja install-clangformat-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clangd ninja install-clangdtool-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-bolt ninja install-bolttool-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-lld ninja install-lldtool-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-libcpp ninja install-stdlib-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-toolchain-stripped
 
           ninja llvm-dwp
-          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-pstl
-          cp ./bin/llvm-dwp ./install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}/bin
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-pstl
+          cp ./bin/llvm-dwp ../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}/bin
 
-          cd install
+          cd ../install
 
           tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}
           tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clang-tidy.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clang-tidy
