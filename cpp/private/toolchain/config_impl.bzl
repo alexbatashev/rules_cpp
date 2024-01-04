@@ -295,7 +295,7 @@ def bazel_toolchain_impl(ctx):
         enabled = stdlib.kind == "libc++",
         flag_sets = [
             flag_set(
-                actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                actions = all_cpp_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = [flag_group(flags = ["-nostdinc++", "-D_LIBCPP_ENABLE_EXPERIMENTAL"])],
             ),
             flag_set(
