@@ -57,10 +57,6 @@ def get_default_flags(include_dirs, link_dirs, rpath_prefix):
                 actions = all_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = ([
                     flag_group(
-                        # Compile actions shouldn't link anything.
-                        flags = ["-c"],
-                    ),
-                    flag_group(
                         expand_if_available = "output_assembly_file",
                         flags = ["-S"],
                     ),
@@ -495,7 +491,7 @@ final_flags_feature = feature(
                     expand_if_available = "user_compile_flags",
                 ),
                 flag_group(
-                    flags = ["%{source_file}"],
+                    flags = ["-c", "%{source_file}"],
                     expand_if_available = "source_file",
                 ),
                 flag_group(
