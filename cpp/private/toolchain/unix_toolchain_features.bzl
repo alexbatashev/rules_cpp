@@ -25,7 +25,7 @@ def get_default_flags(include_dirs, link_dirs, rpath_prefix):
         enabled = True,
         flag_sets = [
             flag_set(
-                actions = all_cpp_compile_actions + all_link_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
+                actions = all_cpp_compile_actions + [EXTRA_ACTIONS.cpp_module_precompile_interface],
                 flag_groups = ([
                     flag_group(
                         flags = ["-std=c++17"],
