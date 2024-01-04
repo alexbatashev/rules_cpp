@@ -9,6 +9,7 @@ load(
 
 cpp_module(
     name = "test",
+    srcs = ["module/impl.cpp"],
     interface = "module/interface.cppm",
     module_name = "test",
 )
