@@ -51,14 +51,14 @@ jobs:
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-libcpp ninja install-stdlib-distribution-stripped
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}} ninja install-toolchain-distribution-stripped
 
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-tidy
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-doc
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-format
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clangd
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-bolt
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-lld
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-libcpp
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-tidy
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-doc
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-format
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clangd
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-bolt
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-lld
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-libcpp
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}
 
           ninja llvm-dwp
           DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}} ninja install-pstl
@@ -117,14 +117,14 @@ jobs:
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-libcpp ninja install-stdlib-distribution-stripped
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-toolchain-distribution-stripped
 
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-tidy
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-doc
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-format
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clangd
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-bolt
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-lld
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-libcpp
-          ../toolchain/scripts/flatten_usr_dir.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-tidy
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-doc
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-format
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clangd
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-bolt
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-lld
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-libcpp
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}
 
           ninja llvm-dwp
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-pstl
