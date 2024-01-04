@@ -7,8 +7,11 @@ on:
 
 
 jobs:
-  build_linux_x64:
+  build_linux:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cpu: ["x86_64", "aarch64", "riscv64"]
     steps:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -yqq python3 git ninja-build cmake zstd
@@ -18,138 +21,115 @@ jobs:
         run: sudo apt install -yqq gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
       - name: Install RISC-V toolchain
         run: sudo apt install -yqq gcc-riscv64-linux-gnu g++-riscv64-linux-gnu binutils-riscv64-linux-gnu
-      - name: Checkout code
+      - name: Checkout LLVM 
         uses: actions/checkout@v4
         with:
           repository: "llvm/llvm-project"
           ref: ${{ inputs.llvm_tag }}
+          path: llvm
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: toolchain
       - name: Build and install
         env:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
-          export RT_TARGETS="x86_64-unknown-linux-gnu;aarch64-unknown-linux-gnu;riscv64-unknown-linux-gnu"
-          export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
-          export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld"
+          mkdir build && mkdir install
 
-          # FIXME: enable bolt once more powerful runners are available
-          # -DCLANG_BOLT_INSTRUMENT=ON -DCMAKE_EXE_LINKER_FLAGS="-Wl,--emit-relocs,-znow"
+          python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-unknown-linux-gnu" --build_dir=$PWD/build
+          
+          cd build
 
-          mkdir build && cd build
-          cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
-            -DLLVM_ENABLE_LLD=OFF \
-            -DLLVM_TARGETS_TO_BUILD="X86;AArch64;NVPTX;AMDGPU;RISCV" \
-            -DLLVM_RUNTIME_TARGETS="$RT_TARGETS" \
-            -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON \
-            -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF \
-            -DLLVM_LINK_LLVM_DYLIB=OFF -DLLVM_ENABLE_LTO=OFF \
-            -DLLVM_ENABLE_RUNTIMES="libunwind;compiler-rt;libcxx;libcxxabi;openmp" \
-            -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;pstl" \
-            -DLLVM_STATIC_LINK_CXX_STDLIB=ON -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
-            -DCMAKE_INSTALL_PREFIX=$PWD/install/${{ inputs.llvm_tag }}-linux-x86_64 \
-            -DLIBCXX_HERMETIC_STATIC_LIBRARY=ON \
-            -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-            -DLIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY=ON \
-            -DLIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY=ON \
-            -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/x86_64-unknown-linux-gnu" -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
-            -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/aarch64-unknown-linux-gnu" -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
-            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_LIBDIR_SUFFIX="/riscv64-unknown-linux-gnu" -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_STANDALONE_BUILD=ON \
-            -DRUNTIMES_x86_64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
-            -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
-            -DRUNTIMES_aarch64-unknown-linux-gnu_OPENMP_ENABLE_LIBOMPTARGET=OFF \
-            -DRUNTIMES_aarch64-unknown-linux-gnu_LIBOMP_OMPD_GDB_SUPPORT=OFF \
-            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
-            -DRUNTIMES_riscv64-unknown-linux-gnu_LIBOMP_OMPD_GDB_SUPPORT=OFF \
-            -DRUNTIMES_riscv64-unknown-linux-gnu_OPENMP_ENABLE_LIBOMPTARGET=OFF \
-            -DLLVM_TOOLCHAIN_TOOLS="$TOOLS" -DLLVM_DISTRIBUTION_COMPONENTS="$COMPONENTS;$TOOLS" \
-            ../llvm
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-tidy ninja install-clangtidy-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-doc ninja install-clangdoc-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-format ninja install-clangformat-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clangd ninja install-clangdtool-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-bolt ninja install-bolttool-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-lld ninja install-lldtool-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-libcpp ninja install-stdlib-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}} ninja install-toolchain-distribution-stripped
 
-          # FIXME: this requires too much RAM
-          # ninja clang-bolt
-          ninja install-distribution-stripped
           ninja llvm-dwp
-          ninja install-pstl
-          cp ./bin/llvm-dwp ./install/${{inputs.llvm_tag}}-linux-x86_64/bin
+          DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}} ninja install-pstl
+          cp ./bin/llvm-dwp ../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}/bin
 
-          cd install
+          cd ../install
 
-          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-x86_64.tar.zst ${{ inputs.llvm_tag }}-linux-x86_64
+          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}
+          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clang-tidy.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clang-tidy
+          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clang-doc.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clang-doc
+          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clang-format.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clang-format
+          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clangd.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-clangd
+          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-bolt.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-bolt
+          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-lld.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-lld
+          tar --zstd -cf ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-libcpp.tar.zst ${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}-libcpp
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: build/install/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
-          name: linux-x86_64-toolchain
-  build_macos_x64:
+          path: install/${{ inputs.llvm_tag }}-linux-${{matrix.cpu}}*.tar.zst
+          name: linux-${{matrix.cpu}}-toolchain
+  build_macos:
     runs-on: macos-13
+    strategy:
+      matrix:
+        cpu: ["x86_64", "aarch64"]
     steps:
       - name: Install dependencies
         run: brew install ninja zstd gnu-tar
-      - name: Checkout code
+      - name: Checkout LLVM 
         uses: actions/checkout@v4
         with:
           repository: "llvm/llvm-project"
           ref: ${{ inputs.llvm_tag }}
+          path: llvm
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: toolchain
       - name: Build and install
         env:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
-          export RT_TARGETS="x86_64-apple-darwin"
-          export TOOLS="dsymutil;llvm-ar;llvm-cxxfilt;llvm-cov;llvm-dwarfdump;llvm-nm;llvm-objdump;llvm-objcopy;llvm-profdata;llvm-ranlib;llvm-readobj;llvm-strip;llvm-size;llvm-symbolizer"
-          export COMPONENTS="clang;clang-format;clang-tidy;clang-resource-headers;bolt;runtimes;lld"
+          mkdir build && mkdir install
 
-          # FIXME: enable bolt once more powerful runners are available
-          # -DCLANG_BOLT_INSTRUMENT=ON -DCMAKE_EXE_LINKER_FLAGS="-Wl,--emit-relocs,-znow"
+          python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-apple-darwin" --build_dir=$PWD/build
 
-          mkdir build && cd build
-          cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
-            -DLLVM_ENABLE_LLD=OFF \
-            -DLLVM_TARGETS_TO_BUILD="X86;AArch64" \
-            -DLLVM_RUNTIME_TARGETS="$RT_TARGETS" \
-            -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON \
-            -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF \
-            -DLLVM_LINK_LLVM_DYLIB=ON -DLLVM_ENABLE_LTO=ON \
-            -DLLVM_ENABLE_RUNTIMES="libunwind;compiler-rt;libcxx;libcxxabi;openmp" \
-            -DLLVM_ENABLE_PROJECTS="bolt;clang;clang-tools-extra;lld;pstl" \
-            -DLLVM_STATIC_LINK_CXX_STDLIB=ON -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
-            -DCMAKE_INSTALL_PREFIX=$PWD/install/${{ inputs.llvm_tag }}-macos-x86_64 \
-            -DLIBCXX_HERMETIC_STATIC_LIBRARY=ON \
-            -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-            -DLIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY=ON \
-            -DLIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY=ON \
-            -DRUNTIMES_x86_64-apple-darwin_OPENMP_LIBDIR_SUFFIX="/x86_64-apple-darwin" -DRUNTIMES_x86_64-apple-darwin_OPENMP_STANDALONE_BUILD=ON \
-            -DRUNTIMES_aarch64-apple-darwin_OPENMP_LIBDIR_SUFFIX="/aarch64-apple-darwin" -DRUNTIMES_aarch64-apple-darwin_OPENMP_STANDALONE_BUILD=ON \
-            -DRUNTIMES_x86_64-apple-darwin_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
-            -DRUNTIMES_x86_64-apple-darwin_OPENMP_ENABLE_LIBOMPTARGET=OFF \
-            -DRUNTIMES_aarch64-apple-darwin_OPENMP_LLVM_TOOLS_DIR="$PWD/bin" \
-            -DRUNTIMES_aarch64-apple-darwin_OPENMP_ENABLE_LIBOMPTARGET=OFF \
-            -DRUNTIMES_aarch64-apple-darwin_LIBOMP_OMPD_GDB_SUPPORT=OFF \
-            -DLLVM_TOOLCHAIN_TOOLS="$TOOLS" -DLLVM_DISTRIBUTION_COMPONENTS="$COMPONENTS;$TOOLS" \
-            -DRUNTIMES_BUILD_ALLOW_DARWIN=ON \
-            -DRUNTIMES_x86_64-apple-darwin_BUILD_ALLOW_DARWIN=ON \
-            -DRUNTIMES_aarch64-apple-darwin_BUILD_ALLOW_DARWIN=ON \
-            ../llvm
+          cd build
+          
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-tidy ninja install-clangtidy-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-doc ninja install-clangdoc-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-format ninja install-clangformat-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clangd ninja install-clangdtool-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-bolt ninja install-bolttool-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-lld ninja install-lldtool-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-libcpp ninja install-stdlib-distribution-stripped
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-toolchain-distribution-stripped
 
-          # FIXME: this requires too much RAM
-          # ninja clang-bolt
-          ninja install-distribution-stripped
           ninja llvm-dwp
-          ninja install-pstl
-          cp ./bin/llvm-dwp ./install/${{inputs.llvm_tag}}-macos-x86_64/bin
-          cp ./lib/libclang*.dylib ./install/${{inputs.llvm_tag}}-macos-x86_64/lib || true
-          cp ./lib/libLLVM*.dylib ./install/${{inputs.llvm_tag}}-macos-x86_64/lib || true
+          DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-pstl
+          cp ./bin/llvm-dwp ../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}/bin
 
-          cd install
+          cd ../install
 
-          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-x86_64.tar.zst ${{ inputs.llvm_tag }}-macos-x86_64
+          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}
+          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clang-tidy.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clang-tidy
+          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clang-doc.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clang-doc
+          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clang-format.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clang-format
+          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clangd.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-clangd
+          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-bolt.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-bolt
+          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-lld.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-lld
+          tar --zstd -cf ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-libcpp.tar.zst ${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}-libcpp
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: build/install/${{ inputs.llvm_tag }}-macos-x86_64.tar.zst
-          name: macos-x86_64-toolchain
+          path: install/${{ inputs.llvm_tag }}-macos-${{matrix.cpu}}*.tar.zst
+          name: macos-${{matrix.cpu}}-toolchain
 
   publish_release:
-      needs: ["build_linux_x64", "build_macos_x64"]
+      needs: ["build_linux", "build_macos"]
       runs-on: ubuntu-latest
       steps:
         - name: Download artifacts
@@ -158,7 +138,46 @@ jobs:
           run: |
             touch RELASE.txt
             sha256sum linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-tidy.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-doc.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-format.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clangd.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-bolt.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-lld.tar.zst >> RELEASE.txt
+            sha256sum  linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-libcpp.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-tidy.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-doc.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-format.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clangd.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-bolt.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-lld.tar.zst >> RELEASE.txt
+            sha256sum  linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-libcpp.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-tidy.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-doc.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-format.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clangd.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-bolt.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-lld.tar.zst >> RELEASE.txt
+            sha256sum  linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-libcpp.tar.zst >> RELEASE.txt
             sha256sum macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64.tar.zst >> RELEASE.txt
+            sha256sum  macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-tidy.tar.zst >> RELEASE.txt
+            sha256sum  macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-doc.tar.zst >> RELEASE.txt
+            sha256sum  macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-format.tar.zst >> RELEASE.txt
+            sha256sum  macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clangd.tar.zst >> RELEASE.txt
+            sha256sum  macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-bolt.tar.zst >> RELEASE.txt
+            sha256sum  macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-lld.tar.zst >> RELEASE.txt
+            sha256sum  macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-libcpp.tar.zst >> RELEASE.txt
+            sha256sum  macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64.tar.zst >> RELEASE.txt
+            sha256sum  macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-clang-tidy.tar.zst >> RELEASE.txt
+            sha256sum  macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-clang-doc.tar.zst >> RELEASE.txt
+            sha256sum  macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-clang-format.tar.zst >> RELEASE.txt
+            sha256sum  macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-clangd.tar.zst >> RELEASE.txt
+            sha256sum  macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-bolt.tar.zst >> RELEASE.txt
+            sha256sum  macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-lld.tar.zst >> RELEASE.txt
+            sha256sum  macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-libcpp.tar.zst >> RELEASE.txt
+
         - name: Create release
           uses: softprops/action-gh-release@v1
           with:
@@ -169,4 +188,42 @@ jobs:
             prerelease: true
             files: |
               linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-tidy.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-doc.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clang-format.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-clangd.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-bolt.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-lld.tar.zst
+              linux-x86_64-toolchain/${{ inputs.llvm_tag }}-linux-x86_64-libcpp.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-tidy.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-doc.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clang-format.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-clangd.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-bolt.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-lld.tar.zst
+              linux-aarch64-toolchain/${{ inputs.llvm_tag }}-linux-aarch64-libcpp.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-tidy.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-doc.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clang-format.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-clangd.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-bolt.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-lld.tar.zst
+              linux-riscv64-toolchain/${{ inputs.llvm_tag }}-linux-riscv64-libcpp.tar.zst
               macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64.tar.zst
+              macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-tidy.tar.zst
+              macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-doc.tar.zst
+              macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clang-format.tar.zst
+              macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-clangd.tar.zst
+              macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-bolt.tar.zst
+              macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-lld.tar.zst
+              macos-x86_64-toolchain/${{ inputs.llvm_tag }}-macos-x86_64-libcpp.tar.zst
+              macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64.tar.zst
+              macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-clang-tidy.tar.zst
+              macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-clang-doc.tar.zst
+              macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-clang-format.tar.zst
+              macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-clangd.tar.zst
+              macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-bolt.tar.zst
+              macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-lld.tar.zst
+              macos-aarch64-toolchain/${{ inputs.llvm_tag }}-macos-aarch64-libcpp.tar.zst
