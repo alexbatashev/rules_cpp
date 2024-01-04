@@ -2,13 +2,13 @@
 Contains rules implementations for building C++ targets
 """
 
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("//cpp:providers.bzl", "CppModuleInfo")
 load("//cpp/private:common.bzl", "collect_external_headers", "collect_external_includes", "collect_module_objects", "collect_modules", "get_compile_command_args", "resolve_linker_arguments")
 load("//cpp/private:extra_actions.bzl", "EXTRA_ACTIONS")
 load("//cpp/private/actions:compile.bzl", "cpp_compile")
 load("//cpp/private/actions:strip.bzl", "cpp_strip_binary", "cpp_strip_objects")
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 
 def _has_agressive_strip(features, _toolchain):
     # FIXME(alexbatashev): does not work with default toolchain
@@ -165,7 +165,13 @@ def module_impl(ctx):
         progress_message = "Precompiling %{output}",
     )
 
-    obj_files = cpp_compile(ctx.files.srcs + [pcm], headers, includes, modules, features, toolchain, module_srcs = ctx.files.interface)
+    cur_module = {
+        "name": ctx.attr.module_name,
+        "file": pcm,
+        "source": ctx.files.interface[0],
+    }
+
+    obj_files = cpp_compile(ctx.files.srcs + [pcm], headers, includes, modules + [cur_module], features, toolchain, module_srcs = ctx.files.interface)
     obj_files = depset(cpp_strip_objects(obj_files, features, toolchain), transitive = collect_module_objects(ctx.attr.deps + ctx.attr.partitions))
 
     return CppModuleInfo(
