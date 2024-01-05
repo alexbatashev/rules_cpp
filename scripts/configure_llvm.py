@@ -50,8 +50,6 @@ cmake_args = [
     args.build_dir,
     "-S",
     "llvm/llvm",
-    "-DCMAKE_C_COMPILER=clang",
-    "-DCMAKE_CXX_COMPILER=clang++",
     "-DCMAKE_BUILD_TYPE=Release",
     "-DCMAKE_INSTALL_PREFIX=/usr/local",
     "-DLLVM_TARGETS_TO_BUILD={}".format(';'.join(targets_to_build)),
@@ -104,6 +102,15 @@ if not args.target_cpu.startswith("x86_64"):
         f"-DLLVM_TARGET_ARCH={args.target_cpu}",
         f"-DLLVM_DEFAULT_TARGET_TRIPLE={args.target_cpu}",
     ])
+    if platform.system() == "Darwin":
+        cmake_args.append("-DCMAKE_OSX_ARCHITECTURES=aarch64")
+    elif platform.system() == "Linux":
+        cmake_args.extend([
+            f"-DCMAKE_C_COMPILER={args.target_cpu.replace('unknown-', '')}-gcc",
+            f"-DCMAKE_CXX_COMPILER={args.target_cpu.replace('unknown-', '')}-g++",
+            "-DCMAKE_TARGET_SYSTEM=Linux",
+            f"-DCMAKE_TARGET_PROCESSOR={args.target_cpu.split('-')[0]}",
+        ])
 
 print(' '.join(cmake_args))
 subprocess.run(cmake_args, check=True, stdout=subprocess.PIPE)
