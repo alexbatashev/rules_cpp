@@ -115,9 +115,24 @@ if not args.target_cpu.startswith("x86_64"):
             "-DCMAKE_FIND_APPBUNDLE=LAST",
         ])
     elif platform.system() == "Linux":
+        gnu_prefix = args.target_cpu.replace('unknown-', '')
         cmake_args.extend([
-            f"-DCMAKE_C_COMPILER={args.target_cpu.replace('unknown-', '')}-gcc",
-            f"-DCMAKE_CXX_COMPILER={args.target_cpu.replace('unknown-', '')}-g++",
+            "-DCMAKE_C_COMPILER=clang",
+            "-DCMAKE_CXX_COMPILER=clang++",
+            "-DCMAKE_CROSSCOMPILING=True",
+            f"-DCMAKE_AR={gnu_prefix}-ar",
+            f"-DCMAKE_LINKER={gnu_prefix}-ld",
+            f"-DCMAKE_RANLIB={gnu_prefix}-ranlib",
+            f"-DCMAKE_STRIP={gnu_prefix}-strip",
+            f"-DCMAKE_C_COMPILER_AR={gnu_prefix}-ar",
+            f"-DCMAKE_C_COMPILER_RANLIB={gnu_prefix}-ranlib",
+            f"-DCMAKE_CXX_COMPILER_AR={gnu_prefix}-ar",
+            f"-DCMAKE_CXX_COMPILER_RANLIB={gnu_prefix}-ranlib",
+            "-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER",
+            "-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY",
+            "-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
+            # f"-DCMAKE_C_COMPILER={args.target_cpu.replace('unknown-', '')}-gcc",
+            # f"-DCMAKE_CXX_COMPILER={args.target_cpu.replace('unknown-', '')}-g++",
             "-DCMAKE_SYSTEM_NAME=Linux",
             f"-DCMAKE_SYSTEM_PROCESSOR={args.target_cpu.split('-')[0]}",
         ])
