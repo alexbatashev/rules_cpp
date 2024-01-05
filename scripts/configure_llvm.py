@@ -101,13 +101,13 @@ if not args.target_cpu.startswith("x86_64"):
         f"-DLLVM_DEFAULT_TARGET_TRIPLE={args.target_cpu}",
     ])
     if platform.system() == "Darwin":
-        cmake_args.append("-DCMAKE_OSX_ARCHITECTURES=aarch64")
+        cmake_args.append("-DCMAKE_OSX_ARCHITECTURES=arm64")
     elif platform.system() == "Linux":
         cmake_args.extend([
             f"-DCMAKE_C_COMPILER={args.target_cpu.replace('unknown-', '')}-gcc",
             f"-DCMAKE_CXX_COMPILER={args.target_cpu.replace('unknown-', '')}-g++",
-            "-DCMAKE_TARGET_SYSTEM=Linux",
-            f"-DCMAKE_TARGET_PROCESSOR={args.target_cpu.split('-')[0]}",
+            "-DCMAKE_SYSTEM_NAME=Linux",
+            f"-DCMAKE_SYSTEM_PROCESSOR={args.target_cpu.split('-')[0]}",
         ])
 elif platform.system() == "Linux":
     cmake_args.extend([
