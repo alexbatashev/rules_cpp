@@ -107,6 +107,7 @@ jobs:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
+          sudo xcode-select -s /Applications/Xcode_15.1.app
           mkdir build && mkdir install
 
           python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-apple-darwin" --build_dir=$PWD/build
