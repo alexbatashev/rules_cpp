@@ -78,7 +78,6 @@ cmake_args = [
 
 if platform.system() == "Darwin":
     cmake_args.append("-DRUNTIMES_BUILD_ALLOW_DARWIN=ON")
-    cmake_args.append("-DLLVM_ENABLE_LLD=ON")
 elif platform.system() == "Linux":
     cmake_args.append("-DLLVM_USE_LINKER=mold")
 
