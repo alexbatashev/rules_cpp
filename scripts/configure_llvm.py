@@ -76,8 +76,6 @@ cmake_args = [
 
 if platform.system() == "Darwin":
     cmake_args.append("-DRUNTIMES_BUILD_ALLOW_DARWIN=ON")
-elif platform.system() == "Linux":
-    cmake_args.append("-DLLVM_USE_LINKER=mold")
 
 for rt in runtime_targets:
     cmake_args.extend([
@@ -111,6 +109,12 @@ if not args.target_cpu.startswith("x86_64"):
             "-DCMAKE_TARGET_SYSTEM=Linux",
             f"-DCMAKE_TARGET_PROCESSOR={args.target_cpu.split('-')[0]}",
         ])
+elif platform.system() == "Linux":
+    cmake_args.extend([
+        "-DCMAKE_C_COMPILER=clang",
+        "-DCMAKE_CXX_COMPILER=clang++",
+        "-DLLVM_USE_LINKER=mold"
+    ])
 
 print(' '.join(cmake_args))
 subprocess.run(cmake_args, check=True, stdout=subprocess.PIPE)
