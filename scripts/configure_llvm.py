@@ -103,8 +103,6 @@ if not args.target_cpu.startswith("x86_64"):
         f"-DLLVM_HOST_TRIPLE={args.target_cpu}",
         f"-DLLVM_TARGET_ARCH={args.target_cpu}",
         f"-DLLVM_DEFAULT_TARGET_TRIPLE={args.target_cpu}",
-        f"-DCMAKE_C_COMPILER_TARGET={args.target_cpu}",
-        f"-DCMAKE_CXX_COMPILER_TARGET={args.target_cpu}",
     ])
 
 print(' '.join(cmake_args))
