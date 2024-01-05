@@ -21,6 +21,11 @@ jobs:
         run: sudo apt install -yqq gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
       - name: Install RISC-V toolchain
         run: sudo apt install -yqq gcc-riscv64-linux-gnu g++-riscv64-linux-gnu binutils-riscv64-linux-gnu
+      - name: Setup mold
+        uses: warchant/setup-mold@v1
+        with:
+          version: 2.4.0
+          make_default: false
       - name: Checkout LLVM 
         uses: actions/checkout@v4
         with:

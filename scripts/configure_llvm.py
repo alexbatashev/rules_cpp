@@ -78,6 +78,9 @@ cmake_args = [
 
 if platform.system() == "Darwin":
     cmake_args.append("-DRUNTIMES_BUILD_ALLOW_DARWIN=ON")
+    cmake_args.append("-DLLVM_ENABLE_LLD=ON")
+elif platform.system() == "Linux":
+    cmake_args.append("-DLLVM_USE_LINKER=mold")
 
 for rt in runtime_targets:
     cmake_args.extend([
@@ -99,6 +102,10 @@ for rt in runtime_targets:
 if not args.target_cpu.startswith("x86_64"):
     cmake_args.extend([
         f"-DLLVM_HOST_TRIPLE={args.target_cpu}",
+        f"-DLLVM_TARGET_ARCH={args.target_cpu}",
+        f"-DLLVM_DEFAULT_TARGET_TRIPLE={args.target_cpu}",
+        f"-DCMAKE_C_COMPILER_TARGET={args.target_cpu}",
+        f"-DCMAKE_CXX_COMPILER_TARGET={args.target_cpu}",
     ])
 
 print(' '.join(cmake_args))
