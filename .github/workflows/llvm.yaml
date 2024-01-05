@@ -24,8 +24,8 @@ jobs:
       - name: Setup mold
         uses: rui314/setup-mold@v1
         with:
-          version: 2.4.0
-          make_default: false
+          mold-version: 2.4.0
+          make-default: false
       - name: Checkout LLVM 
         uses: actions/checkout@v4
         with:
