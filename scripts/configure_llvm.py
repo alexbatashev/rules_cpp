@@ -103,7 +103,7 @@ if not args.target_cpu.startswith("x86_64"):
     if platform.system() == "Darwin":
         cmake_args.extend([
             "-DCMAKE_OSX_ARCHITECTURES=arm64",
-            "-DCMAKE_SYSTEM_NAME=Apple",
+            "-DCMAKE_SYSTEM_NAME=Apple-Clang",
             "-DCMAKE_SYSTEM_PROCESSOR=arm64"
         ])
     elif platform.system() == "Linux":
