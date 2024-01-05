@@ -58,6 +58,10 @@ cmake_args = [
     "-DLLVM_ENABLE_TERMINFO=OFF",
     "-DLLVM_ENABLE_ZLIB=OFF",
     "-DLLVM_ENABLE_ZSTD=OFF",
+    "-DCLANG_DEFAULT_CXX_STDLIB=libc++",
+    "-DCLANG_DEFAULT_RTLIB=compiler-rt",
+    "-DCLANG_DEFAULT_UNWINDLIB=libunwind",
+    "-DCLANG_DEFAULT_LINKER=lld",
     "-DLLVM_ENABLE_RUNTIMES=libunwind;compiler-rt;libcxx;libcxxabi;openmp",
     "-DLLVM_ENABLE_PROJECTS=bolt;clang;clang-tools-extra;lld;pstl",
     "-DLLVM_STATIC_LINK_CXX_STDLIB=ON",
@@ -103,8 +107,12 @@ if not args.target_cpu.startswith("x86_64"):
     if platform.system() == "Darwin":
         cmake_args.extend([
             "-DCMAKE_SYSTEM_NAME=Darwin",
-            # "-DCMAKE_OSX_ARCHITECTURES=arm64",
-            "-DCMAKE_SYSTEM_PROCESSOR=arm64"
+            "-DCMAKE_SYSTEM_PROCESSOR=arm64",
+            "-DCMAKE_CROSSCOMPILING=True",
+            "-DCMAKE_OSX_DEPLOYMENT_TARGET=14.2",
+            "-DCMAKE_OSX_SYSROOT=/Applications/Xcode_15.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk",
+            "-DCMAKE_FIND_FRAMEWORK=LAST",
+            "-DCMAKE_FIND_APPBUNDLE=LAST",
         ])
     elif platform.system() == "Linux":
         cmake_args.extend([
