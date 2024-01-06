@@ -44,7 +44,7 @@ if platform.system() == "Linux":
         "BPF",
     ]
 elif platform.system() == "Darwin":
-    runtime_targets = ["x86_64-apple-darwin", "aarch64-apple-darwin"]
+    runtime_targets = [args.target_cpu]
     targets_to_build = ["X86", "AArch64", "WebAssembly"]
 
 cmake_args = [
@@ -127,6 +127,7 @@ if not args.target_cpu.startswith("x86_64"):
             "-DCMAKE_C_COMPILER=clang",
             "-DCMAKE_CXX_COMPILER=clang++",
             "-DLLVM_USE_LINKER=mold",
+            "-DCMAKE_LINK_FLAGS=-fuse-ld=mold",
             # f"-DCMAKE_AR=/usr/bin/{gnu_prefix}-ar",
             # f"-DCMAKE_LINKER=/usr/bin/{gnu_prefix}-ld",
             # f"-DCMAKE_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
