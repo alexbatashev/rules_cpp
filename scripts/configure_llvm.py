@@ -34,14 +34,18 @@ if platform.system() == "Linux":
         "aarch64-unknown-linux-gnu",
         "riscv64-unknown-linux-gnu",
     ]
-    targets_to_build = ["X86",
-                        "AArch64",
-                        "NVPTX",
-                        "AMDGPU",
-                        "RISCV"]
+    targets_to_build = [
+        "X86",
+        "AArch64",
+        "NVPTX",
+        "AMDGPU",
+        "RISCV",
+        "WebAssembly",
+        "BPF",
+    ]
 elif platform.system() == "Darwin":
-    runtime_targets = [args.target_cpu]
-    targets_to_build = ["X86", "AArch64"]
+    runtime_targets = ["x86_64-apple-darwin", "aarch64-apple-darwin"]
+    targets_to_build = ["X86", "AArch64", "WebAssembly"]
 
 cmake_args = [
     "cmake",
@@ -106,12 +110,12 @@ if not args.target_cpu.startswith("x86_64"):
         f"-DCMAKE_ASM_COMPILER_TARGET={args.target_cpu}",
         f"-DCMAKE_C_COMPILER_TARGET={args.target_cpu}",
         f"-DCMAKE_CXX_COMPILER_TARGET={args.target_cpu}",
+        "-DCMAKE_CROSSCOMPILING=True",
     ])
     if platform.system() == "Darwin":
         cmake_args.extend([
             "-DCMAKE_SYSTEM_NAME=Darwin",
             "-DCMAKE_SYSTEM_PROCESSOR=arm64",
-            "-DCMAKE_CROSSCOMPILING=True",
             "-DCMAKE_OSX_DEPLOYMENT_TARGET=14.2",
             "-DCMAKE_OSX_SYSROOT=/Applications/Xcode_15.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk",
             "-DCMAKE_FIND_FRAMEWORK=LAST",
@@ -122,18 +126,15 @@ if not args.target_cpu.startswith("x86_64"):
         cmake_args.extend([
             "-DCMAKE_C_COMPILER=clang",
             "-DCMAKE_CXX_COMPILER=clang++",
-            "-DCMAKE_CROSSCOMPILING=True",
-            f"-DCMAKE_AR=/usr/bin/{gnu_prefix}-ar",
-            f"-DCMAKE_LINKER=/usr/bin/{gnu_prefix}-ld",
-            f"-DCMAKE_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
-            f"-DCMAKE_STRIP=/usr/bin/{gnu_prefix}-strip",
-            f"-DCMAKE_C_COMPILER_AR=/usr/bin/{gnu_prefix}-ar",
-            f"-DCMAKE_C_COMPILER_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
-            f"-DCMAKE_CXX_COMPILER_AR=/usr/bin/{gnu_prefix}-ar",
-            f"-DCMAKE_CXX_COMPILER_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
-            "-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER",
-            "-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY",
-            "-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY",
+            "-DLLVM_USE_LINKER=mold",
+            # f"-DCMAKE_AR=/usr/bin/{gnu_prefix}-ar",
+            # f"-DCMAKE_LINKER=/usr/bin/{gnu_prefix}-ld",
+            # f"-DCMAKE_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
+            # f"-DCMAKE_STRIP=/usr/bin/{gnu_prefix}-strip",
+            # f"-DCMAKE_C_COMPILER_AR=/usr/bin/{gnu_prefix}-ar",
+            # f"-DCMAKE_C_COMPILER_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
+            # f"-DCMAKE_CXX_COMPILER_AR=/usr/bin/{gnu_prefix}-ar",
+            # f"-DCMAKE_CXX_COMPILER_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
             # f"-DCMAKE_C_COMPILER={args.target_cpu.replace('unknown-', '')}-gcc",
             # f"-DCMAKE_CXX_COMPILER={args.target_cpu.replace('unknown-', '')}-g++",
             "-DCMAKE_SYSTEM_NAME=Linux",
