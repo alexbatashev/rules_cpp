@@ -47,8 +47,6 @@ def get_default_flags(include_dirs, link_dirs, rpath_prefix):
                             "-no-canonical-prefixes",
                             # TODO enable this option for GCC
                             # "-fno-canonical-system-headers",
-                            # "-isystem",
-                            # "/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include",
                         ],
                     ),
                 ],
@@ -119,7 +117,7 @@ def get_default_flags(include_dirs, link_dirs, rpath_prefix):
                 actions = all_link_actions,
                 flag_groups = [
                     flag_group(
-                        flags = ["-nodefaultlibs"],
+                        flags = ["-nodefaultlibs", "-lm"],
                     ),
                     flag_group(
                         flags = ["-Wl,-L" + d for d in link_dirs],
