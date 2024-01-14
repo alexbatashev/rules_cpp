@@ -231,7 +231,7 @@ def binary_impl(ctx):
     )
 
     if _has_agressive_strip(features, toolchain):
-        cpp_strip_binary(compile_output, compile_output, bin, toolchain)
+        cpp_strip_binary(compile_output, bin, features, toolchain)
 
     default_provider = DefaultInfo(executable = bin)
 
