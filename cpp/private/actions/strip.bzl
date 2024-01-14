@@ -24,7 +24,7 @@ def _cpp_strip_objects_impl(ctx, inputs, feature_config, toolchain):
 
         ctx.actions.run(
             outputs = [outfile],
-            inputs = depset([obj], transitive = toolchain.all_files),
+            inputs = depset([obj], transitive = [toolchain.all_files]),
             executable = strip,
             arguments = [args],
             mnemonic = "CppStripObject",
@@ -48,7 +48,7 @@ def _cpp_strip_binary_impl(ctx, input, output, feature_config, toolchain):
 
     ctx.actions.run(
         outputs = [output],
-        inputs = depset([input], transitive = toolchain.all_files),
+        inputs = depset([input], transitive = [toolchain.all_files]),
         executable = strip,
         arguments = [args],
         mnemonic = "CppStripBinary",
