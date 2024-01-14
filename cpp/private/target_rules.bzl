@@ -79,7 +79,7 @@ def shlib_impl(ctx):
     )
 
     if _has_agressive_strip(features, toolchain):
-        cpp_strip_binary(compile_output, compile_output, shlib, features, toolchain)
+        cpp_strip_binary(compile_output, shlib, features, toolchain)
 
     default_provider = DefaultInfo(files = depset([shlib]))
 
