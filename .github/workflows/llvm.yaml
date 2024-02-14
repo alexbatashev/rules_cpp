@@ -21,6 +21,11 @@ jobs:
         run: sudo apt install -yqq gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
       - name: Install RISC-V toolchain
         run: sudo apt install -yqq gcc-riscv64-linux-gnu g++-riscv64-linux-gnu binutils-riscv64-linux-gnu
+      - name: Setup mold
+        uses: rui314/setup-mold@v1
+        with:
+          mold-version: 2.4.0
+          make-default: false
       - name: Checkout LLVM 
         uses: actions/checkout@v4
         with:
@@ -51,9 +56,18 @@ jobs:
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-libcpp ninja install-stdlib-distribution-stripped
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}} ninja install-toolchain-distribution-stripped
 
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-tidy
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-doc
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clang-format
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-clangd
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-bolt
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-lld
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}-libcpp
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}
+
           ninja llvm-dwp
           DESTDIR=$PWD/install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}} ninja install-pstl
-          cp ./bin/llvm-dwp ../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}/bin
+          cp ./bin/llvm-dwp ../install/${{inputs.llvm_tag}}-linux-${{matrix.cpu}}/bin/
 
           cd ../install
 
@@ -93,6 +107,7 @@ jobs:
           CXXFLAGS: -w
           CFLAGS: -w
         run: |
+          sudo xcode-select -s /Applications/Xcode_15.1.app
           mkdir build && mkdir install
 
           python3 ./toolchain/scripts/configure_llvm.py --target_cpu="${{matrix.cpu}}-apple-darwin" --build_dir=$PWD/build
@@ -108,9 +123,18 @@ jobs:
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-libcpp ninja install-stdlib-distribution-stripped
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-toolchain-distribution-stripped
 
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-tidy
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-doc
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clang-format
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-clangd
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-bolt
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-lld
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}-libcpp
+          ../toolchain/scripts/flatten_usr_dirs.sh $PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}
+
           ninja llvm-dwp
           DESTDIR=$PWD/../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}} ninja install-pstl
-          cp ./bin/llvm-dwp ../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}/bin
+          cp ./bin/llvm-dwp ../install/${{inputs.llvm_tag}}-macos-${{matrix.cpu}}/bin/
 
           cd ../install
 

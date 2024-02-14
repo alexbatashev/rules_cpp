@@ -34,14 +34,18 @@ if platform.system() == "Linux":
         "aarch64-unknown-linux-gnu",
         "riscv64-unknown-linux-gnu",
     ]
-    targets_to_build = ["X86",
-                        "AArch64",
-                        "NVPTX",
-                        "AMDGPU",
-                        "RISCV"]
+    targets_to_build = [
+        "X86",
+        "AArch64",
+        "NVPTX",
+        "AMDGPU",
+        "RISCV",
+        "WebAssembly",
+        "BPF",
+    ]
 elif platform.system() == "Darwin":
     runtime_targets = [args.target_cpu]
-    targets_to_build = ["X86", "AArch64"]
+    targets_to_build = ["X86", "AArch64", "WebAssembly"]
 
 cmake_args = [
     "cmake",
@@ -50,16 +54,18 @@ cmake_args = [
     args.build_dir,
     "-S",
     "llvm/llvm",
-    "-DCMAKE_C_COMPILER=clang",
-    "-DCMAKE_CXX_COMPILER=clang++",
     "-DCMAKE_BUILD_TYPE=Release",
-    "-DCMAKE_INSTALL_PREFIX=\".\"",
+    "-DCMAKE_INSTALL_PREFIX=/usr/local",
     "-DLLVM_TARGETS_TO_BUILD={}".format(';'.join(targets_to_build)),
     "-DLLVM_RUNTIME_TARGETS={}".format(';'.join(runtime_targets)),
     "-DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON",
     "-DLLVM_ENABLE_TERMINFO=OFF",
     "-DLLVM_ENABLE_ZLIB=OFF",
     "-DLLVM_ENABLE_ZSTD=OFF",
+    "-DCLANG_DEFAULT_CXX_STDLIB=libc++",
+    "-DCLANG_DEFAULT_RTLIB=compiler-rt",
+    "-DCLANG_DEFAULT_UNWINDLIB=libunwind",
+    "-DCLANG_DEFAULT_LINKER=lld",
     "-DLLVM_ENABLE_RUNTIMES=libunwind;compiler-rt;libcxx;libcxxabi;openmp",
     "-DLLVM_ENABLE_PROJECTS=bolt;clang;clang-tools-extra;lld;pstl",
     "-DLLVM_STATIC_LINK_CXX_STDLIB=ON",
@@ -99,6 +105,50 @@ for rt in runtime_targets:
 if not args.target_cpu.startswith("x86_64"):
     cmake_args.extend([
         f"-DLLVM_HOST_TRIPLE={args.target_cpu}",
+        f"-DLLVM_TARGET_ARCH={args.target_cpu}",
+        f"-DLLVM_DEFAULT_TARGET_TRIPLE={args.target_cpu}",
+        f"-DCMAKE_ASM_COMPILER_TARGET={args.target_cpu}",
+        f"-DCMAKE_C_COMPILER_TARGET={args.target_cpu}",
+        f"-DCMAKE_CXX_COMPILER_TARGET={args.target_cpu}",
+        "-DCMAKE_CROSSCOMPILING=True",
+    ])
+    if platform.system() == "Darwin":
+        cmake_args.extend([
+            "-DCMAKE_SYSTEM_NAME=Darwin",
+            "-DCMAKE_SYSTEM_PROCESSOR=arm64",
+            "-DCMAKE_OSX_DEPLOYMENT_TARGET=14.2",
+            "-DCMAKE_OSX_SYSROOT=/Applications/Xcode_15.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk",
+            "-DCMAKE_FIND_FRAMEWORK=LAST",
+            "-DCMAKE_FIND_APPBUNDLE=LAST",
+        ])
+    elif platform.system() == "Linux":
+        gnu_prefix = args.target_cpu.replace('unknown-', '')
+        cmake_args.extend([
+            "-DCMAKE_C_COMPILER=clang",
+            "-DCMAKE_CXX_COMPILER=clang++",
+            "-DLLVM_USE_LINKER=mold",
+            "-DCMAKE_LINK_FLAGS=-fuse-ld=mold",
+            "-DCMAKE_C_COMPILER_WORKS=1",
+            "-DCMAKE_CXX_COMPILER_WORKS=1",
+            "-DCMAKE_ASM_COMPILER_WORKS=1",
+            # f"-DCMAKE_AR=/usr/bin/{gnu_prefix}-ar",
+            # f"-DCMAKE_LINKER=/usr/bin/{gnu_prefix}-ld",
+            # f"-DCMAKE_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
+            # f"-DCMAKE_STRIP=/usr/bin/{gnu_prefix}-strip",
+            # f"-DCMAKE_C_COMPILER_AR=/usr/bin/{gnu_prefix}-ar",
+            # f"-DCMAKE_C_COMPILER_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
+            # f"-DCMAKE_CXX_COMPILER_AR=/usr/bin/{gnu_prefix}-ar",
+            # f"-DCMAKE_CXX_COMPILER_RANLIB=/usr/bin/{gnu_prefix}-ranlib",
+            # f"-DCMAKE_C_COMPILER={args.target_cpu.replace('unknown-', '')}-gcc",
+            # f"-DCMAKE_CXX_COMPILER={args.target_cpu.replace('unknown-', '')}-g++",
+            "-DCMAKE_SYSTEM_NAME=Linux",
+            f"-DCMAKE_SYSTEM_PROCESSOR={args.target_cpu.split('-')[0]}",
+        ])
+elif platform.system() == "Linux":
+    cmake_args.extend([
+        "-DCMAKE_C_COMPILER=clang",
+        "-DCMAKE_CXX_COMPILER=clang++",
+        "-DLLVM_USE_LINKER=mold"
     ])
 
 print(' '.join(cmake_args))
